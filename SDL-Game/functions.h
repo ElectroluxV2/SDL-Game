@@ -243,3 +243,5 @@ bool LTimer::isPaused() {
   // Timer is running and paused
   return mPaused && mStarted;
 }
+
+bool Equals(float a, float b) { return fabs(a - b) < FLT_EPSILON; }
