@@ -41,8 +41,13 @@ class Game {
   // Player x
   float playerX = 0;
   float accelerationX = 0;
+  float lastAccelerationX = 0;
+  bool xchanged = false;
 
   bool Load() {
+
+   // printf("R: %f\n", RESISTANCE_PEAK);
+    printf("R: %f\n", ACCELERATION_PER_TICK);
 
     // Initialize SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -151,7 +156,7 @@ class Game {
     sprintf(text, "Frames Per Second: %f", fps);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
 
-    sprintf(text, "accelerationX: %f, posX: %f", accelerationX, playerX);
+    sprintf(text, "accelerationX: %f, change: %d, posX: %f", accelerationX, xchanged, playerX);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);
   }
 
@@ -163,7 +168,7 @@ class Game {
       x = 0;
     }
 
-    printf("x: %d\n", x);
+   // printf("x: %d\n", x);
 
     BetterDrawSurface(screenSurface, mapSurface, x, 261);
     BetterDrawSurface(screenSurface, mapSurface, x + mapSurface->w, 261);
@@ -173,12 +178,25 @@ class Game {
     BetterDrawSurface(screenSurface, juanSurface, 0 , 261);
   }
 
-  void Physics() { 
-    if (accelerationX > 0) accelerationX -= RESISTANCE;
-    else if (accelerationX < 0) accelerationX += RESISTANCE;
+  bool hit = false;
+  void Physics(unsigned long totalTicks) { 
+
+
+    if (abs(accelerationX) < FLT_EPSILON) {
+      hit = false;
+    }
+
+    if (abs(accelerationX) > ACCELERATION_PER_TICK || hit) {
+      hit = true;
+      if (accelerationX > 0)
+        accelerationX -= RESISTANCE;
+      else if (accelerationX < 0)
+        accelerationX += RESISTANCE;
+    } else {
+      hit = false;
+    }
 
     if (accelerationX == 0) return;
-
     playerX += PLAYER_FORCE * accelerationX;
   }
 
@@ -204,8 +222,9 @@ class Game {
     LTimer fpsTimer;
 
     // Start counting frames per second
-    int countedFrames = 0;
+    unsigned long countedFrames = 0;
     fpsTimer.start();
+
 
     // While application is running
     while (!quit) {
@@ -213,7 +232,7 @@ class Game {
       HandleEvents();
 
       // Handle physics
-      Physics();
+      Physics(countedFrames);
 
       // Calculate fps
       fps = countedFrames / (fpsTimer.getTicks() / (float) 1000);

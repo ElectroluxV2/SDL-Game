@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <cmath>
+#include <cfloat>
 #include "functions.h"
 #include "game.h"
 
