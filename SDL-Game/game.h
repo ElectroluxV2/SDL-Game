@@ -105,33 +105,55 @@ class Game {
     }
 
     void JumpPhysics(Platform p) {
-      if (acc.y > 0) {
+      /*if (acc.y > 0) {
         pos.y += PLAYER_FORCE * acc.y;
         acc.y -= RESISTANCE;
       } else if(pos.y > 0) {
         pos.y -= PLAYER_FORCE * 4;
       } else {
         airBorn = false;
-      }
+      }*/
 
-      /*int tmp = pos.y + 0;
+
+      int tmp = pos.y; // Do not change player pos before colision test
       if (acc.y > 0) {
-        tmp = pos.y + PLAYER_FORCE * acc.y;
+        // Jump
+        printf("1 Acc y: %f\n", acc.y);
+        tmp += PLAYER_FORCE * acc.y;
         acc.y -= RESISTANCE;
-      } else if (pos.y > 0) {
-        tmp = pos.y - PLAYER_FORCE * 4;
       } else {
-        airBorn = false;
+        // Fall
+        printf("2 Acc y: %f\n", acc.y);
+        tmp -= PLAYER_FORCE * 4;
       }
 
-      box.y = tmp;
-      if (checkCollision(box, p)) {
-        box.y = pos.y;
+      // Remove left acceleration
+      if (abs(acc.y) < RESISTANCE) acc.y = 0;
+
+      // Check colision
+      // Change player's box y
+      int playersRelativeY = box.y;
+
+      //printf("Tmp: %d\n", -tmp + 300);
+      //printf("Acc y: %f\n", acc.y);
+      //printf("airBorn: %s\n", airBorn ? "true" : "false");
+      box.y = -tmp + 300;
+
+      // Check if can pass by
+      if (checkCollision(box, p.box)) {
+        // Restore player's box position
+        box.y = playersRelativeY;
+        // Remove any y acceleration on player
         acc.y = 0;
+        // Not in air anymore
+        airBorn = false;
+
+        // Prevent any changes to player's pos
         return;
       }
 
-      pos.y = tmp;*/
+      // Change position
+      pos.y = tmp;
     }
 
     void MovePhysics(Platform p) {
@@ -165,10 +187,10 @@ class Game {
     }
 
     void OnPhysics(Platform p) {
-      box.y = -pos.y + 300;
-      printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
-      printf("Platfus: %d, %d, %d, %d\n", p.box.x, p.box.y, p.box.w, p.box.h);
-      printf("%s\n", checkCollision(box, p.box) ? "true" : "false");
+      // box.y = -pos.y + 300;
+      //printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
+      //printf("Platfus: %d, %d, %d, %d\n", p.box.x, p.box.y, p.box.w, p.box.h);
+      //printf("%s\n", checkCollision(box, p.box) ? "true" : "false");
       JumpPhysics(p);
       MovePhysics(p);
     }
@@ -181,6 +203,8 @@ class Game {
       int destX = p->onMapPlacementX + player.pos.x;
       p->box.x = destX;
     }
+    // Folow on y axyis
+    player.box.y = -player.pos.y + 300;
 
     player.OnPhysics(platforms[0]);
   }
@@ -251,8 +275,9 @@ class Game {
     platforms[i] = p;
   }
 
-  void LoadLevel() { 
-    SetPlatform(0, 300, 390);
+  void LoadLevel() {
+    player.pos.y = 200;
+    SetPlatform(0, 0, 390);
     SetPlatform(1, 200, 60);
     SetPlatform(2, 900, 270);
     SetPlatform(3, 1500, 400);
@@ -341,29 +366,25 @@ class Game {
     BetterDrawSurface(screenSurface, mapSurface, x + mapSurface->w, 46);
   }
 
-  void DrawPlatforms() {
-    //int x = (int)player.GetPos().x % mapSurface->w;
-    //printf("x: %d\ty: %d\n", x, 0);
-
-    //BetterDrawSurface(screenSurface, platformSurface, x, 261);
-    //BetterDrawSurface(screenSurface, platformSurface, x + 100, 300);
-    
+  void DrawPlatforms() {   
     for (int i = 0; i < 10; i++) {
       Platform p = platforms[i];
-      //int destX = p.onMapPlacementX + player.pos.x;
+      // Box has relative to screen values
       BetterDrawSurface(screenSurface, platformSurface, p.box.x, p.box.y);
 
       // Display hit boxes for debug purposes
-      if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y < 0 || p.box.y + p.box.h > SCREEN_HEIGHT)
-        continue;
-
-      DrawRectangle(screenSurface, p.box.x, p.box.y, p.box.w, p.box.h, red, red);
+      if (DEBUG) {
+        if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y < 0 || p.box.y + p.box.h > SCREEN_HEIGHT) continue;
+        DrawRectangle(screenSurface, p.box.x, p.box.y, p.box.w, p.box.h, red, red);
+      }
     }
   }
 
   void DrawPlayer() { 
     BetterDrawSurface(screenSurface, juanSurface, 0 , 300 - player.pos.y);
-    DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
+    if (DEBUG) {
+      DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
+    }
   }
 
   void Render() {
