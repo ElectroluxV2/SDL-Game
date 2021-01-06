@@ -30,42 +30,10 @@ class Game {
   SDL_Surface* platformSurface = NULL;
 
   // Platfrom array
-  SDL_Rect platforms[10];
-  /*struct Platform {
-      SDL_Rect box;
-  } platforms[10];*/ /*= {
-    {
-      200,
-      455
-    }, {
-      400,
-      390
-    }, {
-      900,
-      270
-    }, {
-      1500,
-      400
-    }, {
-      2000,
-      350
-    }, {
-      2400,
-      200
-    }, {
-      2900,
-      400
-    }, {
-      3500,
-      350
-    }, {
-      3900,
-      400
-    }, {
-      4300,
-      300
-    }
-  };*/
+  struct Platform {
+    SDL_Rect box = {0, 0, 0, 0};
+    int onMapPlacementX = 0;
+  } platforms[10];
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -132,7 +100,7 @@ class Game {
       acc.y = 0;
     }
 
-    void JumpPhysics(SDL_Rect p) {
+    void JumpPhysics(Platform p) {
       if (acc.y > 0) {
         pos.y += PLAYER_FORCE * acc.y;
         acc.y -= RESISTANCE;
@@ -162,7 +130,7 @@ class Game {
       pos.y = tmp;*/
     }
 
-    void MovePhysics(SDL_Rect p) {
+    void MovePhysics(Platform p) {
       if (acc.x > 0) acc.x -= RESISTANCE;
       else if (acc.x < 0) acc.x += RESISTANCE;
       if (abs(acc.x) < RESISTANCE) acc.x = 0;
@@ -187,7 +155,7 @@ class Game {
       if (pos.x >= 0 && acc.x >= 0) acc.x = 0;
     }
 
-    void OnPhysics(SDL_Rect p) {
+    void OnPhysics(Platform p) {
       box.y = -pos.y + 300;
       //printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
       //printf("Platfus: %d, %d, %d, %d\n", p.x, p.y, p.w, p.h);
@@ -269,11 +237,22 @@ class Game {
     return true;
   }
 
-  void LoadLevel() {
-    platforms[0] = {
-     300, 300,
-     platformSurface->w, platformSurface->h
-    };
+  void SetPlatform(int i, int x, int y) {
+    Platform p = {{x, y, platformSurface->w, platformSurface->h}, x};
+    platforms[i] = p;
+  }
+
+  void LoadLevel() { 
+    SetPlatform(0, 200, 60);
+    SetPlatform(1, 300, 390);
+    SetPlatform(2, 900, 270);
+    SetPlatform(3, 1500, 400);
+    SetPlatform(4, 2000, 350);
+    SetPlatform(5, 2400, 200);
+    SetPlatform(6, 2900, 400);
+    SetPlatform(7, 3500, 350);
+    SetPlatform(8, 3900, 400);
+    SetPlatform(9, 4300, 300);
   }
 
   void Close() {
@@ -361,9 +340,9 @@ class Game {
     //BetterDrawSurface(screenSurface, platformSurface, x + 100, 300);
     
     for (int i = 0; i < 10; i++) {
-      SDL_Rect p = platforms[i];
-      int destX = p.x + player.pos.x;
-      BetterDrawSurface(screenSurface, platformSurface, destX, p.y);
+      Platform p = platforms[i];
+      int destX = p.onMapPlacementX + player.pos.x;
+      BetterDrawSurface(screenSurface, platformSurface, destX, p.box.y);
       //DrawRectangle(screenSurface, p.x, p.y, p.w, p.h, red, red);
     }
   }
