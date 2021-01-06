@@ -31,14 +31,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\cs8x8.bmp">
+    <CopyFileToFolders Include="cs8x8.bmp">
       <Filter>Resource Files</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\map.bmp">
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="map.bmp">
       <Filter>Resource Files</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\juan.bmp">
+    </Image>
+    <Image Include="juan.bmp">
       <Filter>Resource Files</Filter>
-    </CopyFileToFolders>
+    </Image>
   </ItemGroup>
 </Project>
