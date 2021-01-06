@@ -104,59 +104,53 @@ class Game {
       acc.y = 0;
     }
 
-    void JumpPhysics(Platform p) {
-      /*if (acc.y > 0) {
-        pos.y += PLAYER_FORCE * acc.y;
-        acc.y -= RESISTANCE;
-      } else if(pos.y > 0) {
-        pos.y -= PLAYER_FORCE * 4;
-      } else {
-        airBorn = false;
-      }*/
-
-
+    void JumpPhysics(Platform* platforms, int platformCount) {
       int tmp = pos.y; // Do not change player pos before colision test
       if (acc.y > 0) {
         // Jump
-        printf("1 Acc y: %f\n", acc.y);
+        // printf("1 Acc y: %f\n", acc.y);
         tmp += PLAYER_FORCE * acc.y;
         acc.y -= RESISTANCE;
       } else {
         // Fall
-        printf("2 Acc y: %f\n", acc.y);
+        // printf("2 Acc y: %f\n", acc.y);
         tmp -= PLAYER_FORCE * 4;
       }
 
       // Remove left acceleration
       if (abs(acc.y) < RESISTANCE) acc.y = 0;
 
-      // Check colision
       // Change player's box y
       int playersRelativeY = box.y;
 
-      //printf("Tmp: %d\n", -tmp + 300);
-      //printf("Acc y: %f\n", acc.y);
-      //printf("airBorn: %s\n", airBorn ? "true" : "false");
+      // printf("Tmp: %d\n", -tmp + 300);
+      // printf("Acc y: %f\n", acc.y);
+      // printf("airBorn: %s\n", airBorn ? "true" : "false");
       box.y = -tmp + 300;
 
-      // Check if can pass by
-      if (checkCollision(box, p.box)) {
-        // Restore player's box position
-        box.y = playersRelativeY;
-        // Remove any y acceleration on player
-        acc.y = 0;
-        // Not in air anymore
-        airBorn = false;
+      // Check colision
+      // Every platform
+      for (int i = 0; i < platformCount; i++) {
+        Platform p = *(platforms + i);
+        // Check if can pass by
+        if (checkCollision(box, p.box)) {
+          // Restore player's box position
+          box.y = playersRelativeY;
+          // Remove any y acceleration on player
+          acc.y = 0;
+          // Not in air anymore
+          airBorn = false;
 
-        // Prevent any changes to player's pos
-        return;
+          // Prevent any changes to player's pos
+          return;
+        }
       }
 
       // Change position
       pos.y = tmp;
     }
 
-    void MovePhysics(Platform p) {
+    void MovePhysics(Platform* platforms, int platformCount) {
       if (acc.x > 0) acc.x -= RESISTANCE;
       else if (acc.x < 0) acc.x += RESISTANCE;
       if (abs(acc.x) < RESISTANCE) acc.x = 0;
@@ -167,16 +161,22 @@ class Game {
 
       // Position player want to go
       int tmp = pos.x + (PLAYER_FORCE * acc.x);
-      // Relative position of box
-      int platformRelativeX = p.box.x;
-      p.box.x = p.onMapPlacementX + tmp;
-      // Check if can pass by
-      if (checkCollision(p.box, box)) {
-        // Restore box position
-        p.box.x = platformRelativeX;
-        // Remove any x acceleration on player
-        acc.x = 0;
-        return; // Prevent any changes to player's pos
+
+      // Every platform
+      for (int i = 0; i < platformCount; i++) {
+        Platform p = *(platforms + i);
+
+        // Relative position of box
+        int platformRelativeX = p.box.x;
+        p.box.x = p.onMapPlacementX + tmp;
+        // Check if can pass by
+        if (checkCollision(p.box, box)) {
+          // Restore box position
+          p.box.x = platformRelativeX;
+          // Remove any x acceleration on player
+          acc.x = 0;
+          return;  // Prevent any changes to player's pos
+        }
       }
 
       // Change position
@@ -186,27 +186,28 @@ class Game {
       if (pos.x >= 0 && acc.x >= 0) acc.x = 0;
     }
 
-    void OnPhysics(Platform p) {
+    void OnPhysics(Platform* platforms, int platformCount) {
       // box.y = -pos.y + 300;
       //printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
       //printf("Platfus: %d, %d, %d, %d\n", p.box.x, p.box.y, p.box.w, p.box.h);
       //printf("%s\n", checkCollision(box, p.box) ? "true" : "false");
-      JumpPhysics(p);
-      MovePhysics(p);
+      JumpPhysics(platforms, platformCount);
+      MovePhysics(platforms, platformCount);
     }
   } player;
 
-    void Physics() {
-    // Follow player movement
-    for (int i = 0; i < 10; i++) {
-      Platform* p = &platforms[i];
-      int destX = p->onMapPlacementX + player.pos.x;
-      p->box.x = destX;
-    }
-    // Folow on y axyis
-    player.box.y = -player.pos.y + 300;
+  void Physics() {
+      // Follow player movement
+      for (int i = 0; i < 10; i++) {
+        Platform* p = &platforms[i];
+        int destX = p->onMapPlacementX + player.pos.x;
+        p->box.x = destX;
+      }
 
-    player.OnPhysics(platforms[0]);
+      // Folow on y axyis
+      player.box.y = -player.pos.y + 300;
+
+      player.OnPhysics(platforms, 10);
   }
 
   bool Load() {
@@ -251,8 +252,6 @@ class Game {
     // Disable cursor
     SDL_ShowCursor(SDL_DISABLE);
 
-    //player.pos.y = 200;
-
     printf("Successfully loaded\n");
     return true;
   }
@@ -276,17 +275,17 @@ class Game {
   }
 
   void LoadLevel() {
-    player.pos.y = 200;
+    player.pos.y = 150;
     SetPlatform(0, 0, 390);
-    SetPlatform(1, 200, 60);
-    SetPlatform(2, 900, 270);
-    SetPlatform(3, 1500, 400);
-    SetPlatform(4, 2000, 350);
-    SetPlatform(5, 2400, 200);
-    SetPlatform(6, 2900, 400);
-    SetPlatform(7, 3500, 350);
-    SetPlatform(8, 3900, 400);
-    SetPlatform(9, 4300, 300);
+    SetPlatform(1, 400, 350);
+    SetPlatform(2, 800, 300);
+    SetPlatform(3, 1000, 250);
+    SetPlatform(4, 1400, 350);
+    SetPlatform(5, 1800, 270);
+    SetPlatform(6, 2200, 400);
+    SetPlatform(7, 2600, 350);
+    SetPlatform(8, 3000, 400);
+    SetPlatform(9, 3400, 300);
   }
 
   void Close() {
