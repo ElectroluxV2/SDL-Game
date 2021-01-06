@@ -54,8 +54,11 @@ class Game {
   // Start counting frames per second
   int countedFrames = 0;
 
-  //Current time start time
+  // Current time start time
   Uint32 startTime = 0;
+
+  // false -> steering with arrows, true -> automatic movment
+  bool mode = false;  
 
   // Player x
   struct Player {
@@ -138,19 +141,24 @@ class Game {
 
       if (AreSame(acc.x, 0)) return;
 
+      // printf("%f\n", acc.x);
 
-      printf("%f\n", acc.x);
-
-      pos.x +=  (PLAYER_FORCE * acc.x);
-      /*int tmp = pos.x + (PLAYER_FORCE * acc.x);
-      box.x = -tmp;
-      if (checkCollision(box, p)) {
-        box.x = -pos.x;
+      // Position player want to go
+      int tmp = pos.x + (PLAYER_FORCE * acc.x);
+      // Relative position of box
+      int platformRelativeX = p.box.x;
+      p.box.x = p.onMapPlacementX + tmp;
+      // Check if can pass by
+      if (checkCollision(p.box, box)) {
+        // Restore box position
+        p.box.x = platformRelativeX;
+        // Remove any x acceleration on player
         acc.x = 0;
-        return;
+        return; // Prevent any changes to player's pos
       }
 
-      pos.x = tmp;*/
+      // Change position
+      pos.x = tmp;
 
       if (pos.x > 0) pos.x = 0;
       if (pos.x >= 0 && acc.x >= 0) acc.x = 0;
@@ -158,15 +166,24 @@ class Game {
 
     void OnPhysics(Platform p) {
       box.y = -pos.y + 300;
-      //printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
-      //printf("Platfus: %d, %d, %d, %d\n", p.x, p.y, p.w, p.h);
-      //printf("%s\n", checkCollision(box, p) ? "true" : "false");
+      printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
+      printf("Platfus: %d, %d, %d, %d\n", p.box.x, p.box.y, p.box.w, p.box.h);
+      printf("%s\n", checkCollision(box, p.box) ? "true" : "false");
       JumpPhysics(p);
       MovePhysics(p);
     }
   } player;
 
-  bool mode = false; // false -> steering with arrows, true -> automatic movment
+    void Physics() {
+    // Follow player movement
+    for (int i = 0; i < 10; i++) {
+      Platform* p = &platforms[i];
+      int destX = p->onMapPlacementX + player.pos.x;
+      p->box.x = destX;
+    }
+
+    player.OnPhysics(platforms[0]);
+  }
 
   bool Load() {
 
@@ -210,15 +227,6 @@ class Game {
     // Disable cursor
     SDL_ShowCursor(SDL_DISABLE);
 
-    // Create some platfus
-    /*rand(time(NULL));
-    for (int i = 0; i < 10; i++) {
-      platforms[i] = {
-        rand() % 2000,
-        rand() % 100 + 10
-      };
-    }*/
-
     //player.pos.y = 200;
 
     printf("Successfully loaded\n");
@@ -244,8 +252,8 @@ class Game {
   }
 
   void LoadLevel() { 
-    SetPlatform(0, 200, 60);
-    SetPlatform(1, 300, 390);
+    SetPlatform(0, 300, 390);
+    SetPlatform(1, 200, 60);
     SetPlatform(2, 900, 270);
     SetPlatform(3, 1500, 400);
     SetPlatform(4, 2000, 350);
@@ -355,18 +363,7 @@ class Game {
 
   void DrawPlayer() { 
     BetterDrawSurface(screenSurface, juanSurface, 0 , 300 - player.pos.y);
-    //DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
-  }
-
-  void Physics() { 
-    // Follow player movement
-    for (int i = 0; i < 10; i++) {
-      Platform* p = &platforms[i];
-      int destX = p->onMapPlacementX + player.pos.x;
-      p->box.x = destX;
-    }
-
-    player.OnPhysics(platforms[0]);
+    DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
   }
 
   void Render() {
