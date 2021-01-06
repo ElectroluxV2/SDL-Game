@@ -1,6 +1,10 @@
-const float RESISTANCE = 0.128; // 0.128
+const float RESISTANCE = 0.5; // 0.128
 const float PLAYER_FORCE = 0.5; // 0.5
 const float ACCELERATION_PER_TICK = 1; // 0.4
+
+const float JUMP_FORCE = PLAYER_FORCE * 3;
+const float GRAVITY_FORCE = JUMP_FORCE * 5;
+
 const bool DEBUG = false;
 
 class Game {
@@ -109,12 +113,12 @@ class Game {
       if (acc.y > 0) {
         // Jump
         // printf("1 Acc y: %f\n", acc.y);
-        tmp += PLAYER_FORCE * acc.y;
+        tmp += JUMP_FORCE * acc.y;
         acc.y -= RESISTANCE;
       } else {
         // Fall
         // printf("2 Acc y: %f\n", acc.y);
-        tmp -= PLAYER_FORCE * 4;
+        tmp -= GRAVITY_FORCE;
       }
 
       // Remove left acceleration
@@ -129,7 +133,7 @@ class Game {
       box.y = -tmp + 300;
 
       // Check colision
-      // Every platform
+      // Every platformG
       for (int i = 0; i < platformCount; i++) {
         Platform p = *(platforms + i);
         // Check if can pass by
