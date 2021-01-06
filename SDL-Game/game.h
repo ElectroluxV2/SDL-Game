@@ -66,7 +66,6 @@ class Game {
 
   // Player x
   struct Player {
-
     bool airBorn = false;
     int jumpCount = 0;
     SDL_Rect box = {
@@ -81,9 +80,9 @@ class Game {
       float y;
     } acc, pos;
 
-    void Load(int w, int h) {
-      box.w = w;
-      box.h = h;
+    void Load(int w, int h, int hitBoxOffset) {
+      box.w = w - hitBoxOffset;
+      box.h = h - hitBoxOffset;
     }
 
     void AddAccelerationX(float f) {
@@ -109,7 +108,7 @@ class Game {
     }
 
     void JumpPhysics(Platform* platforms, int platformCount) {
-      int tmp = pos.y; // Do not change player pos before colision test
+      float tmp = pos.y; // Do not change player pos before colision test
       if (acc.y > 0) {
         // Jump
         // printf("1 Acc y: %f\n", acc.y);
@@ -164,7 +163,7 @@ class Game {
       // printf("%f\n", acc.x);
 
       // Position player want to go
-      int tmp = pos.x + (PLAYER_FORCE * acc.x);
+      float tmp = pos.x + (PLAYER_FORCE * acc.x);
 
       // Every platform
       for (int i = 0; i < platformCount; i++) {
@@ -267,7 +266,9 @@ class Game {
     if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
     if (!LoadOptimizedSurface("juan.bmp", &screenSurface, &juanSurface)) return false;
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
-    player.Load(juanSurface->w, juanSurface->h);
+
+    // Add 15% offset
+    player.Load(juanSurface->w, juanSurface->h, platformSurface->h * 0.15);
 
     printf("Successfully loaded media\n");
     return true;
