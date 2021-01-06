@@ -1,9 +1,15 @@
+const float RESISTANCE = 0.128; // 0.128
+const float PLAYER_FORCE = 0.5; // 0.5
+const float ACCELERATION_PER_TICK = 1; // 0.4
+
 class Game {
   const int SCREEN_WIDTH = 640;
   const int SCREEN_HEIGHT = 480;
-  const float RESISTANCE = 0.5; // 0.128
-  const float PLAYER_FORCE = 1; // 0.5
-  const float ACCELERATION_PER_TICK = 1.5; // 0.4
+
+  const int SCREEN_FPS = 77;
+  const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+
+  bool collisionDetected = false;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -19,6 +25,47 @@ class Game {
 
   // Player
   SDL_Surface* juanSurface = NULL;
+
+  // Platforms
+  SDL_Surface* platformSurface = NULL;
+
+  // Platfrom array
+  SDL_Rect platforms[10];
+  /*struct Platform {
+      SDL_Rect box;
+  } platforms[10];*/ /*= {
+    {
+      200,
+      455
+    }, {
+      400,
+      390
+    }, {
+      900,
+      270
+    }, {
+      1500,
+      400
+    }, {
+      2000,
+      350
+    }, {
+      2400,
+      200
+    }, {
+      2900,
+      400
+    }, {
+      3500,
+      350
+    }, {
+      3900,
+      400
+    }, {
+      4300,
+      300
+    }
+  };*/
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -38,9 +85,119 @@ class Game {
   // Start counting frames per second
   int countedFrames = 0;
 
+  //Current time start time
+  Uint32 startTime = 0;
+
   // Player x
-  float playerX = 0;
-  float accelerationX = 0;
+  struct Player {
+
+    bool airBorn = false;
+    int jumpCount = 0;
+    SDL_Rect box = {
+      0,
+      0,
+      0,
+      0
+    };
+
+    struct Coord {
+      float x;
+      float y;
+    }acc, pos;
+
+    void Load(int w, int h) {
+      box.w = w;
+      box.h = h;
+    }
+
+    void AddAccelerationX(float f) {
+      if (pos.x >= 0) return;
+      acc.x += f;
+    }
+
+    void SubAccelerationX(float f) {
+      acc.x -= f;
+    }
+
+    void Jump() {
+      if (airBorn) return;
+      airBorn = true;
+      acc.y += ACCELERATION_PER_TICK * 8;
+    }
+    
+    void Reset() {
+      pos.x = 0;
+      pos.y = 0;
+      acc.x = 0;
+      acc.y = 0;
+    }
+
+    void JumpPhysics(SDL_Rect p) {
+      if (acc.y > 0) {
+        pos.y += PLAYER_FORCE * acc.y;
+        acc.y -= RESISTANCE;
+      } else if(pos.y > 0) {
+        pos.y -= PLAYER_FORCE * 4;
+      } else {
+        airBorn = false;
+      }
+
+      /*int tmp = pos.y + 0;
+      if (acc.y > 0) {
+        tmp = pos.y + PLAYER_FORCE * acc.y;
+        acc.y -= RESISTANCE;
+      } else if (pos.y > 0) {
+        tmp = pos.y - PLAYER_FORCE * 4;
+      } else {
+        airBorn = false;
+      }
+
+      box.y = tmp;
+      if (checkCollision(box, p)) {
+        box.y = pos.y;
+        acc.y = 0;
+        return;
+      }
+
+      pos.y = tmp;*/
+    }
+
+    void MovePhysics(SDL_Rect p) {
+      if (acc.x > 0) acc.x -= RESISTANCE;
+      else if (acc.x < 0) acc.x += RESISTANCE;
+      if (abs(acc.x) < RESISTANCE) acc.x = 0;
+
+      if (AreSame(acc.x, 0)) return;
+
+
+      printf("%f\n", acc.x);
+
+      pos.x +=  (PLAYER_FORCE * acc.x);
+      /*int tmp = pos.x + (PLAYER_FORCE * acc.x);
+      box.x = -tmp;
+      if (checkCollision(box, p)) {
+        box.x = -pos.x;
+        acc.x = 0;
+        return;
+      }
+
+      pos.x = tmp;*/
+
+      if (pos.x > 0) pos.x = 0;
+      if (pos.x >= 0 && acc.x >= 0) acc.x = 0;
+    }
+
+    void OnPhysics(SDL_Rect p) {
+      box.y = -pos.y + 300;
+      //printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
+      //printf("Platfus: %d, %d, %d, %d\n", p.x, p.y, p.w, p.h);
+      //printf("%s\n", checkCollision(box, p) ? "true" : "false");
+      JumpPhysics(p);
+      MovePhysics(p);
+    }
+  } player;
+
+  bool mode = false; // false -> steering with arrows, true -> automatic movment
 
   bool Load() {
 
@@ -57,7 +214,8 @@ class Game {
       return false;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    //renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
       printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
       return false;
@@ -83,6 +241,17 @@ class Game {
     // Disable cursor
     SDL_ShowCursor(SDL_DISABLE);
 
+    // Create some platfus
+    /*rand(time(NULL));
+    for (int i = 0; i < 10; i++) {
+      platforms[i] = {
+        rand() % 2000,
+        rand() % 100 + 10
+      };
+    }*/
+
+    //player.pos.y = 200;
+
     printf("Successfully loaded\n");
     return true;
   }
@@ -93,9 +262,18 @@ class Game {
 
     if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
     if (!LoadOptimizedSurface("juan.bmp", &screenSurface, &juanSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    player.Load(juanSurface->w, juanSurface->h);
 
     printf("Successfully loaded media\n");
     return true;
+  }
+
+  void LoadLevel() {
+    platforms[0] = {
+     300, 300,
+     platformSurface->w, platformSurface->h
+    };
   }
 
   void Close() {
@@ -114,31 +292,30 @@ class Game {
   }
 
   void HandleEvents() {
+    // keyboard mocarz obluhuje
+    const Uint8 *key = SDL_GetKeyboardState(NULL);
+    if (key[SDL_SCANCODE_RIGHT]) {
+      player.SubAccelerationX(ACCELERATION_PER_TICK);
+    }
+    if (key[SDL_SCANCODE_LEFT]) {
+      player.AddAccelerationX(ACCELERATION_PER_TICK);
+    }
+    if (key[SDL_SCANCODE_Z]) {
+      player.Jump();
+    }
+    if (key[SDL_SCANCODE_ESCAPE]) {
+      quit = true;
+    }
+    if (key[SDL_SCANCODE_N]) {
+      player.Reset();
+      startTime = SDL_GetTicks();
+    }
     // Event handler
     SDL_Event e{};
-
     while (SDL_PollEvent(&e) != 0) {
       // User requests quit
       if (e.type == SDL_QUIT) {
         quit = true;
-      } else if (e.type == SDL_KEYDOWN) {
-
-        // Actions based on key
-        switch (e.key.keysym.sym) {
-          case SDLK_UP:
-            break;
-
-          case SDLK_DOWN:
-            break;
-
-          case SDLK_LEFT:
-            accelerationX += ACCELERATION_PER_TICK;
-            break;
-
-          case SDLK_RIGHT:
-            accelerationX -= ACCELERATION_PER_TICK;
-            break;
-        }
       }
     }
   }
@@ -148,38 +325,56 @@ class Game {
     DrawRectangle(screenSurface, 4, 45, SCREEN_WIDTH - 8, 431, green, NULL);
 
     char text[128];
-    sprintf(text, "Frames Per Second: %f", fps);
+    sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime)/1000.0);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
 
-    sprintf(text, "accelerationX: %f, posX: %f", accelerationX, playerX);
+    sprintf(text, "accelerationX: %.0f, posX: %.0f,", player.acc.x, player.pos.x);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);
+    /*sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime) / 1000.0);
+    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
+
+    sprintf(text, "accelerationY: %.0f, posY: %.0f,", player.acc.y, player.GetPos().y);
+    sprintf(text, "accelerationY: %f,   posY: %f", player.acc.y, player.GetPos().y);
+    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);*/
+
   }
 
   void DrawBackground() {
 
-    int x = (int) playerX % mapSurface->w;
+    int x = (int)player.pos.x % mapSurface->w;
 
     if (-x == mapSurface->w) {
       x = 0;
     }
 
-    printf("x: %d\n", x);
+    //printf("x: %d\ty: %d\n", x, 0);
 
-    BetterDrawSurface(screenSurface, mapSurface, x, 261);
-    BetterDrawSurface(screenSurface, mapSurface, x + mapSurface->w, 261);
+    BetterDrawSurface(screenSurface, mapSurface, x, 46);
+    BetterDrawSurface(screenSurface, mapSurface, x + mapSurface->w, 46);
+  }
+
+  void DrawPlatforms() {
+    //int x = (int)player.GetPos().x % mapSurface->w;
+    //printf("x: %d\ty: %d\n", x, 0);
+
+    //BetterDrawSurface(screenSurface, platformSurface, x, 261);
+    //BetterDrawSurface(screenSurface, platformSurface, x + 100, 300);
+    
+    for (int i = 0; i < 10; i++) {
+      SDL_Rect p = platforms[i];
+      int destX = p.x + player.pos.x;
+      BetterDrawSurface(screenSurface, platformSurface, destX, p.y);
+      //DrawRectangle(screenSurface, p.x, p.y, p.w, p.h, red, red);
+    }
   }
 
   void DrawPlayer() { 
-    BetterDrawSurface(screenSurface, juanSurface, 0 , 261);
+    BetterDrawSurface(screenSurface, juanSurface, 0 , 300 - player.pos.y);
+    //DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
   }
 
   void Physics() { 
-    if (accelerationX > 0) accelerationX -= RESISTANCE;
-    else if (accelerationX < 0) accelerationX += RESISTANCE;
-
-    if (accelerationX == 0) return;
-
-    playerX += PLAYER_FORCE * accelerationX;
+    player.OnPhysics(platforms[0]);
   }
 
   void Render() {
@@ -193,6 +388,8 @@ class Game {
 
     DrawPlayer();
 
+    DrawPlatforms();
+
     SDL_UpdateTexture(screenTexture, NULL, screenSurface->pixels, screenSurface->pitch);
     //		SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, screenTexture, NULL, NULL);
@@ -203,6 +400,9 @@ class Game {
     // The frames per second timer
     LTimer fpsTimer;
 
+    //The frames per second cap timer
+    LTimer capTimer;
+
     // Start counting frames per second
     int countedFrames = 0;
     fpsTimer.start();
@@ -210,6 +410,7 @@ class Game {
     // While application is running
     while (!quit) {
       // Handle events on queue
+      capTimer.start();
       HandleEvents();
 
       // Handle physics
@@ -217,10 +418,18 @@ class Game {
 
       // Calculate fps
       fps = countedFrames / (fpsTimer.getTicks() / (float) 1000);
+      if (fps > 2000000) {
+        fps = 0;
+      }
 
       // Render
       Render();
-      countedFrames++;
+      ++countedFrames;
+
+      int frameTicks = capTimer.getTicks();
+      if (frameTicks < SCREEN_TICKS_PER_FRAME) {
+        SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
+      }
     }
   }
 
@@ -228,6 +437,7 @@ class Game {
   void Start() { 
     if (!Load()) return;
     if (!LoadMedia()) return;
+    LoadLevel();
 
     Loop();
 

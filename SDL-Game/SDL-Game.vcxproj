@@ -72,23 +72,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
-    <LibraryPath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\vclib\SDL2-2.0.14\include;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vclib\SDL2-2.0.14\lib\x64;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
-    <LibraryPath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\vclib\SDL2-2.0.14\include;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vclib\SDL2-2.0.14\lib\x64;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
-    <LibraryPath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\vclib\SDL2-2.0.14\include;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vclib\SDL2-2.0.14\lib\x64;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
-    <LibraryPath>N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\vclib\SDL2-2.0.14\include;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vclib\SDL2-2.0.14\lib\x64;N:\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -156,41 +156,42 @@
   <ItemGroup>
     <ClInclude Include="functions.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="player.h" />
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="S:\sdltutorial\cs8x8.bmp">
+    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\cs8x8.bmp">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="S:\sdltutorial\map.bmp">
+    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\map.bmp">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="S:\sdltutorial\juan.bmp">
+    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\juan.bmp">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
-      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">N:\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game;%(DestinationFolders)</DestinationFolders>
     </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

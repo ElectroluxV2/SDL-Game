@@ -39,10 +39,8 @@ void DrawSurface(SDL_Surface* screen, SDL_Surface* sprite, int x, int y) {
 
 void BetterDrawSurface(SDL_Surface* screen, SDL_Surface* sprite, int x, int y) {
   SDL_Rect dest;
-  int borderW = 8;
-  int borderH = 4;
-  dest.x = 0 + x + borderW;
-  dest.y = borderH + (y - sprite->h / 2);
+  dest.x = 0 + x;
+  dest.y = y;
   dest.w = sprite->w;
   dest.h = sprite->h;
   SDL_BlitSurface(sprite, NULL, screen, &dest);
@@ -78,8 +76,8 @@ void DrawRectangle(SDL_Surface* screen, int x, int y, int l, int k,
   DrawLine(screen, x + l - 1, y, k, 0, 1, outlineColor);
   DrawLine(screen, x, y, l, 1, 0, outlineColor);
   DrawLine(screen, x, y + k - 1, l, 1, 0, outlineColor);
-  /*for(int i = y + 1; i < y + k - 1; i++)
-          DrawLine(screen, x + 1, i, l - 2, 1, 0, fillColor);*/
+  for(int i = y + 1; i < y + k - 1; i++)
+          DrawLine(screen, x + 1, i, l - 2, 1, 0, fillColor);
 };
 
 bool LoadOptimizedSurface(const char* path, SDL_Surface** screenSurface, SDL_Surface** dest) {
@@ -242,4 +240,54 @@ bool LTimer::isStarted() {
 bool LTimer::isPaused() {
   // Timer is running and paused
   return mPaused && mStarted;
+}
+
+bool checkCollision(SDL_Rect a, SDL_Rect b)
+{
+  //The sides of the rectangles
+  int leftA, leftB;
+  int rightA, rightB;
+  int topA, topB;
+  int bottomA, bottomB;
+
+  //Calculate the sides of rect A
+  leftA = a.x;
+  rightA = a.x + a.w;
+  topA = a.y;
+  bottomA = a.y + a.h;
+
+  //Calculate the sides of rect B
+  leftB = b.x;
+  rightB = b.x + b.w;
+  topB = b.y;
+  bottomB = b.y + b.h;
+
+  //If any of the sides from A are outside of B
+  if (bottomA <= topB)
+  {
+    return false;
+  }
+
+  if (topA >= bottomB)
+  {
+    return false;
+  }
+
+  if (rightA <= leftB)
+  {
+    return false;
+  }
+
+  if (leftA >= rightB)
+  {
+    return false;
+  }
+
+  //If none of the sides from A are outside B
+  return true;
+}
+
+bool AreSame(double a, double b)
+{
+    return fabs(a - b) < FLT_EPSILON;
 }

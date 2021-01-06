@@ -5,7 +5,10 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <cstdlib>
+#include <cfloat>
 #include "functions.h"
+#include "player.h"
 #include "game.h"
 
 int main(int argc, char *args[]) {

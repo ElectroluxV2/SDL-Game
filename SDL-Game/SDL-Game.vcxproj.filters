@@ -26,18 +26,19 @@
     <ClInclude Include="functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="S:\sdltutorial\cs8x8.bmp">
+    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\cs8x8.bmp">
       <Filter>Resource Files</Filter>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="S:\sdltutorial\map.bmp">
+    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\map.bmp">
       <Filter>Resource Files</Filter>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="S:\sdltutorial\juan.bmp">
+    <CopyFileToFolders Include="C:\Users\milos\Desktop\SDL-Game\SDL-Game\SDL-Game\juan.bmp">
       <Filter>Resource Files</Filter>
-    </Image>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
