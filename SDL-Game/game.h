@@ -1,6 +1,7 @@
 const float RESISTANCE = 0.128; // 0.128
 const float PLAYER_FORCE = 0.5; // 0.5
 const float ACCELERATION_PER_TICK = 1; // 0.4
+const bool DEBUG = false;
 
 class Game {
   const int SCREEN_WIDTH = 640;
@@ -71,7 +72,7 @@ class Game {
     struct Coord {
       float x;
       float y;
-    }acc, pos;
+    } acc, pos;
 
     void Load(int w, int h) {
       box.w = w;
@@ -341,9 +342,14 @@ class Game {
     
     for (int i = 0; i < 10; i++) {
       Platform p = platforms[i];
-      int destX = p.onMapPlacementX + player.pos.x;
-      BetterDrawSurface(screenSurface, platformSurface, destX, p.box.y);
-      //DrawRectangle(screenSurface, p.x, p.y, p.w, p.h, red, red);
+      //int destX = p.onMapPlacementX + player.pos.x;
+      BetterDrawSurface(screenSurface, platformSurface, p.box.x, p.box.y);
+
+      // Display hit boxes for debug purposes
+      if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y < 0 || p.box.y + p.box.h > SCREEN_HEIGHT)
+        continue;
+
+      DrawRectangle(screenSurface, p.box.x, p.box.y, p.box.w, p.box.h, red, red);
     }
   }
 
@@ -353,6 +359,13 @@ class Game {
   }
 
   void Physics() { 
+    // Follow player movement
+    for (int i = 0; i < 10; i++) {
+      Platform* p = &platforms[i];
+      int destX = p->onMapPlacementX + player.pos.x;
+      p->box.x = destX;
+    }
+
     player.OnPhysics(platforms[0]);
   }
 
