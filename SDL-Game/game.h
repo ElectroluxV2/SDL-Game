@@ -86,11 +86,11 @@ class Game {
     }
 
     void AddAccelerationX(float f) {
-      if (pos.x >= 0) return;
       acc.x += f;
     }
 
     void SubAccelerationX(float f) {
+      if (pos.x <= 0) return;
       acc.x -= f;
     }
 
@@ -99,24 +99,15 @@ class Game {
       airBorn = true;
       acc.y += ACCELERATION_PER_TICK * 8;
     }
-    
-    void Reset() {
-      pos.x = 0;
-      pos.y = 0;
-      acc.x = 0;
-      acc.y = 0;
-    }
 
     void JumpPhysics(Platform* platforms, int platformCount) {
       float tmp = pos.y; // Do not change player pos before colision test
       if (acc.y > 0) {
         // Jump
-        // printf("1 Acc y: %f\n", acc.y);
         tmp += JUMP_FORCE * acc.y;
         acc.y -= RESISTANCE;
       } else {
         // Fall
-        // printf("2 Acc y: %f\n", acc.y);
         tmp -= GRAVITY_FORCE;
       }
 
@@ -126,15 +117,12 @@ class Game {
       // Change player's box y
       int playersRelativeY = box.y;
 
-      // printf("Tmp: %d\n", -tmp + 300);
-      // printf("Acc y: %f\n", acc.y);
-      // printf("airBorn: %s\n", airBorn ? "true" : "false");
       box.y = -tmp + 300;
 
       // Check colision
       // Every platformG
       for (int i = 0; i < platformCount; i++) {
-        Platform p = *(platforms + i);
+        Platform p = platforms[i];
         // Check if can pass by
         if (checkCollision(box, p.box)) {
           // Restore player's box position
@@ -143,7 +131,7 @@ class Game {
           acc.y = 0;
           // Not in air anymore
           airBorn = false;
-
+     
           // Prevent any changes to player's pos
           return;
         }
@@ -157,45 +145,42 @@ class Game {
       if (acc.x > 0) acc.x -= RESISTANCE;
       else if (acc.x < 0) acc.x += RESISTANCE;
       if (abs(acc.x) < RESISTANCE) acc.x = 0;
-
       if (AreSame(acc.x, 0)) return;
 
-      // printf("%f\n", acc.x);
-
       // Position player want to go
-      float tmp = pos.x + (PLAYER_FORCE * acc.x);
-
+      float tmp = pos.x + (acc.x * PLAYER_FORCE);
       // Every platform
       for (int i = 0; i < platformCount; i++) {
-        Platform p = *(platforms + i);
-
-        // Relative position of box
-        int platformRelativeX = p.box.x;
-        p.box.x = p.onMapPlacementX + tmp;
+        Platform p = platforms[i];
+        // Relative postion of box
+        int platformRelatvieX = p.box.x;
+        p.box.x = p.onMapPlacementX - tmp;
         // Check if can pass by
         if (checkCollision(p.box, box)) {
           // Restore box position
-          p.box.x = platformRelativeX;
+          p.box.x = platformRelatvieX;
           // Remove any x acceleration on player
           acc.x = 0;
-          return;  // Prevent any changes to player's pos
+          return;
         }
       }
-
       // Change position
       pos.x = tmp;
 
-      if (pos.x > 0) pos.x = 0;
-      if (pos.x >= 0 && acc.x >= 0) acc.x = 0;
+      if (pos.x < 0) pos.x = 0;
+      if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
 
     void OnPhysics(Platform* platforms, int platformCount) {
-      // box.y = -pos.y + 300;
-      //printf("Player: %d, %d, %d, %d\n", box.x, box.y, box.w, box.h);
-      //printf("Platfus: %d, %d, %d, %d\n", p.box.x, p.box.y, p.box.w, p.box.h);
-      //printf("%s\n", checkCollision(box, p.box) ? "true" : "false");
       JumpPhysics(platforms, platformCount);
       MovePhysics(platforms, platformCount);
+    }
+
+    void Reset() {
+      pos.x = 0;
+      pos.y = 0;
+      acc.x = 0;
+      acc.y = 0;
     }
   } player;
 
@@ -203,7 +188,7 @@ class Game {
       // Follow player movement
       for (int i = 0; i < 10; i++) {
         Platform* p = &platforms[i];
-        int destX = p->onMapPlacementX + player.pos.x;
+        int destX = p->onMapPlacementX - player.pos.x;
         p->box.x = destX;
       }
 
@@ -312,10 +297,10 @@ class Game {
     // keyboard mocarz obluhuje
     const Uint8 *key = SDL_GetKeyboardState(NULL);
     if (key[SDL_SCANCODE_RIGHT]) {
-      player.SubAccelerationX(ACCELERATION_PER_TICK);
+      player.AddAccelerationX(ACCELERATION_PER_TICK);
     }
     if (key[SDL_SCANCODE_LEFT]) {
-      player.AddAccelerationX(ACCELERATION_PER_TICK);
+      player.SubAccelerationX(ACCELERATION_PER_TICK);
     }
     if (key[SDL_SCANCODE_Z]) {
       player.Jump();
@@ -345,20 +330,19 @@ class Game {
     sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime)/1000.0);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
 
-    sprintf(text, "accelerationX: %.0f, posX: %.0f,", player.acc.x, player.pos.x);
+    /*sprintf(text, "accelerationX: %.0f, posX: %.0f, ", player.acc.x, player.pos.x);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);
-    /*sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime) / 1000.0);
+    sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime) / 1000.0);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
 
     sprintf(text, "accelerationY: %.0f, posY: %.0f,", player.acc.y, player.GetPos().y);
     sprintf(text, "accelerationY: %f,   posY: %f", player.acc.y, player.GetPos().y);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);*/
-
   }
 
   void DrawBackground() {
 
-    int x = (int)player.pos.x % mapSurface->w;
+   int x = -((int)player.pos.x % mapSurface->w);
 
     if (-x == mapSurface->w) {
       x = 0;
@@ -440,6 +424,7 @@ class Game {
       Render();
       ++countedFrames;
 
+      // Capping the frame rate
       int frameTicks = capTimer.getTicks();
       if (frameTicks < SCREEN_TICKS_PER_FRAME) {
         SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
