@@ -8,8 +8,8 @@ const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const bool DEBUG = false;
 
 class Game {
-  const int SCREEN_WIDTH = 640;
-  const int SCREEN_HEIGHT = 480;
+  const int SCREEN_WIDTH = 1920;
+  const int SCREEN_HEIGHT = 1080;
 
   const int SCREEN_FPS = 60;
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
@@ -38,7 +38,7 @@ class Game {
   struct Platform {
     SDL_Rect box = {0, 0, 0, 0};
     int onMapPlacementX = 0;
-  } platforms[10];
+  } platforms[100];
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -115,6 +115,8 @@ class Game {
         tmp += JUMP_FORCE * acc.y;
         acc.y -= RESISTANCE;
       } else {
+        // Not in air anymore
+        airBorn = false;
         // Fall
         // printf("2 Acc y: %f\n", acc.y);
         tmp -= GRAVITY_FORCE;
@@ -141,8 +143,7 @@ class Game {
           box.y = playersRelativeY;
           // Remove any y acceleration on player
           acc.y = 0;
-          // Not in air anymore
-          airBorn = false;
+          
 
           // Prevent any changes to player's pos
           return;
@@ -201,7 +202,7 @@ class Game {
 
   void Physics() {
       // Follow player movement
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 100; i++) {
         Platform* p = &platforms[i];
         int destX = p->onMapPlacementX + player.pos.x;
         p->box.x = destX;
@@ -210,7 +211,7 @@ class Game {
       // Folow on y axyis
       player.box.y = -player.pos.y + 300;
 
-      player.OnPhysics(platforms, 10);
+      player.OnPhysics(platforms, 100);
   }
 
   bool Load() {
@@ -234,6 +235,8 @@ class Game {
       printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
       return false;
     }
+
+    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 
     // Initialize renderer
     SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -281,16 +284,11 @@ class Game {
 
   void LoadLevel() {
     player.pos.y = 150;
-    SetPlatform(0, 0, 390);
-    SetPlatform(1, 400, 350);
-    SetPlatform(2, 800, 300);
-    SetPlatform(3, 1000, 250);
-    SetPlatform(4, 1400, 350);
-    SetPlatform(5, 1800, 270);
-    SetPlatform(6, 2200, 400);
-    SetPlatform(7, 2600, 350);
-    SetPlatform(8, 3000, 400);
-    SetPlatform(9, 3400, 300);
+
+    for (int i = 0; i < 100; i++) {
+      SetPlatform(i, (i * platformSurface->w) + i *20, 400);
+    }
+    
   }
 
   void Close() {
@@ -371,7 +369,7 @@ class Game {
   }
 
   void DrawPlatforms() {   
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
       Platform p = platforms[i];
       // Box has relative to screen values
       BetterDrawSurface(screenSurface, platformSurface, p.box.x, p.box.y);
