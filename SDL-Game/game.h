@@ -96,6 +96,12 @@ class Game {
 
     void Jump() {
       if (airBorn) return;
+      if (jumpCount == 2) {
+        return;
+      }
+
+      jumpCount++;
+
       airBorn = true;
       acc.y += ACCELERATION_PER_TICK * 8;
     }
@@ -109,6 +115,9 @@ class Game {
       } else {
         // Fall
         tmp -= GRAVITY_FORCE;
+
+        // Not in air anymore
+        airBorn = false;
       }
 
       // Remove left acceleration
@@ -125,12 +134,15 @@ class Game {
         Platform p = platforms[i];
         // Check if can pass by
         if (checkCollision(box, p.box)) {
+          if (jumpCount == 2) {
+            jumpCount = 0;
+          }
+
+
           // Restore player's box position
           box.y = playersRelativeY;
           // Remove any y acceleration on player
           acc.y = 0;
-          // Not in air anymore
-          airBorn = false;
      
           // Prevent any changes to player's pos
           return;
