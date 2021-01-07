@@ -95,11 +95,13 @@ class Game {
     }
 
     void Jump() {
+      // Can't jump while jumping
       if (airBorn) return;
-      if (jumpCount == 2) {
+
+      // Can't jump more than 2 times in row
+      if (jumpCount >= 2) {
         return;
       }
-
       jumpCount++;
 
       airBorn = true;
@@ -134,11 +136,9 @@ class Game {
         Platform p = platforms[i];
         // Check if can pass by
         if (checkCollision(box, p.box)) {
-          if (jumpCount == 2) {
-            jumpCount = 0;
-          }
-
-
+          // Reenable jump on floor hit
+          jumpCount = 0;
+          
           // Restore player's box position
           box.y = playersRelativeY;
           // Remove any y acceleration on player
