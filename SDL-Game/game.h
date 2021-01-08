@@ -4,6 +4,7 @@ const float ACCELERATION_PER_TICK = 1; // 0.4
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
+const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
 
 const bool DEBUG = false;
 
@@ -16,8 +17,9 @@ class Game {
 
   bool collisionDetected = false;
 
-  // Time
+  // Jump logic
   int ticksTimePressed = 0;
+  bool preventToLongJump = false;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -98,7 +100,13 @@ class Game {
       acc.x -= f;
     }
 
-    bool Jump(int ticks) {
+    void IncrementJump() {
+      jumpCount++;
+
+      airBorn = true;
+    }
+
+    bool Jump() {
       // Can't jump while jumping
       if (airBorn) return false;
 
@@ -107,14 +115,7 @@ class Game {
         return false;
       }
 
-      int strength = ticks / 100;
-
-      printf("S: %d\n", strength);
-
-      jumpCount++;
-
-      airBorn = true;
-      acc.y += ACCELERATION_PER_TICK * (8 + strength);
+      acc.y += ACCELERATION_PER_TICK;
 
       return true;
     }
@@ -324,24 +325,17 @@ class Game {
     }
     if (key[SDL_SCANCODE_Z]) {
       ticksTimePressed += ticks;
-
-      if (ticksTimePressed >= 0.5 * fps * ticks) {  // 0.5 seconds in fps
-        if (player.Jump(ticksTimePressed)) {
-          ticksTimePressed = 0;
-        }
+      if (!preventToLongJump) player.Jump();
+   
+      if (ticksTimePressed >= MAX_JUMP_TIME * fps * ticks && !preventToLongJump) {  // seconds in fps
+        preventToLongJump = true;
       }
-
-      //printf("pressed\n");
     } else {
-
-      if (ticksTimePressed != 0) {
-        player.Jump(ticksTimePressed);
+      preventToLongJump = false;
+      if (ticksTimePressed > ticks) {
         ticksTimePressed = 0;
-      };
-
-     
-      //printf("not pressed\n");
-     
+        player.IncrementJump();
+      };    
     }
     if (key[SDL_SCANCODE_ESCAPE]) {
       quit = true;
