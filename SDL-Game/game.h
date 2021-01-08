@@ -16,6 +16,9 @@ class Game {
 
   bool collisionDetected = false;
 
+  // Time
+  int ticksTimePressed = 0;
+
   // The window we'll be rendering to
   SDL_Window* window = NULL;
 
@@ -95,7 +98,7 @@ class Game {
       acc.x -= f;
     }
 
-    void Jump() {
+    void Jump(int ticks) {
       // Can't jump while jumping
       if (airBorn) return;
 
@@ -103,10 +106,15 @@ class Game {
       if (jumpCount >= 2) {
         return;
       }
+
+      int strength = ticks / 100;
+
+      printf("S: %d\n", strength);
+
       jumpCount++;
 
       airBorn = true;
-      acc.y += ACCELERATION_PER_TICK * 8;
+      acc.y += ACCELERATION_PER_TICK * (8 + strength);
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
@@ -303,7 +311,7 @@ class Game {
     printf("Successfully closed\n");
   }
 
-  void HandleEvents() {
+  void HandleEvents(int ticks) {
     // keyboard mocarz obluhuje
     const Uint8 *key = SDL_GetKeyboardState(NULL);
     if (key[SDL_SCANCODE_RIGHT]) {
@@ -313,7 +321,24 @@ class Game {
       player.SubAccelerationX(ACCELERATION_PER_TICK);
     }
     if (key[SDL_SCANCODE_Z]) {
-      player.Jump();
+      ticksTimePressed += ticks;
+
+      if (ticksTimePressed >= 0.5 * fps * ticks) {  // 0.5 seconds in fps
+        player.Jump(ticksTimePressed);
+        ticksTimePressed = 0;
+      }
+
+      //printf("pressed\n");
+    } else {
+
+      if (ticksTimePressed != 0) {
+        player.Jump(ticksTimePressed);
+        ticksTimePressed = 0;
+      };
+
+     
+      //printf("not pressed\n");
+     
     }
     if (key[SDL_SCANCODE_ESCAPE]) {
       quit = true;
@@ -407,18 +432,25 @@ class Game {
     // The frames per second timer
     LTimer fpsTimer;
 
-    //The frames per second cap timer
+    // The frames per second cap timer
     LTimer capTimer;
+
+    // The time between ticks
+    LTimer tickTimer;
 
     // Start counting frames per second
     int countedFrames = 0;
     fpsTimer.start();
 
+    tickTimer.start();
+
     // While application is running
     while (!quit) {
       // Handle events on queue
       capTimer.start();
-      HandleEvents();
+
+      HandleEvents(tickTimer.getTicks());
+      tickTimer.start();
 
       // Handle physics
       Physics();
