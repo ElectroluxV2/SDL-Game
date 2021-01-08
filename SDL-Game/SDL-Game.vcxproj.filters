@@ -29,18 +29,19 @@
     <ClInclude Include="player.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="cs8x8.bmp">
       <Filter>Resource Files</Filter>
     </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="map.bmp">
+    <CopyFileToFolders Include="map.bmp">
       <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="juan.bmp">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="juan.bmp">
       <Filter>Resource Files</Filter>
-    </Image>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

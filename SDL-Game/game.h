@@ -36,9 +36,10 @@ class Game {
 
   // Platfrom array
   struct Platform {
-    SDL_Rect box = {0, 0, 0, 0};
+    SDL_Rect box = { 0, 0, 0, 0 };
     int onMapPlacementX = 0;
-  } platforms[10];
+  };
+  Vector<Platform> platforms;
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -62,7 +63,7 @@ class Game {
   Uint32 startTime = 0;
 
   // false -> steering with arrows, true -> automatic movment
-  bool mode = false;  
+  bool mode = false;
 
   // Player x
   struct Player {
@@ -108,7 +109,7 @@ class Game {
       acc.y += ACCELERATION_PER_TICK * 8;
     }
 
-    void JumpPhysics(Platform* platforms, int platformCount) {
+    void JumpPhysics(Vector<Platform> platforms, int platformCount) {
       float tmp = pos.y; // Do not change player pos before colision test
       if (acc.y > 0) {
         // Jump
@@ -132,8 +133,7 @@ class Game {
 
       // Check colision
       // Every platformG
-      for (int i = 0; i < platformCount; i++) {
-        Platform p = platforms[i];
+      for (Platform p : platforms) {
         // Check if can pass by
         if (checkCollision(box, p.box)) {
           // Reenable jump on floor hit
@@ -153,7 +153,7 @@ class Game {
       pos.y = tmp;
     }
 
-    void MovePhysics(Platform* platforms, int platformCount) {
+    void MovePhysics(Vector<Platform> platforms, int platformCount) {
       if (acc.x > 0) acc.x -= RESISTANCE;
       else if (acc.x < 0) acc.x += RESISTANCE;
       if (abs(acc.x) < RESISTANCE) acc.x = 0;
@@ -162,8 +162,7 @@ class Game {
       // Position player want to go
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
       // Every platform
-      for (int i = 0; i < platformCount; i++) {
-        Platform p = platforms[i];
+      for (Platform p : platforms) {
         // Relative postion of box
         int platformRelatvieX = p.box.x;
         p.box.x = p.onMapPlacementX - tmp;
@@ -183,7 +182,7 @@ class Game {
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
 
-    void OnPhysics(Platform* platforms, int platformCount) {
+    void OnPhysics(Vector<Platform> platforms, int platformCount) {
       JumpPhysics(platforms, platformCount);
       MovePhysics(platforms, platformCount);
     }
@@ -198,10 +197,9 @@ class Game {
 
   void Physics() {
       // Follow player movement
-      for (int i = 0; i < 10; i++) {
-        Platform* p = &platforms[i];
-        int destX = p->onMapPlacementX - player.pos.x;
-        p->box.x = destX;
+      for (Platform& p : platforms) {
+        int destX = p.onMapPlacementX - player.pos.x;
+        p.box.x = destX;
       }
 
       // Folow on y axyis
@@ -271,23 +269,23 @@ class Game {
     return true;
   }
 
-  void SetPlatform(int i, int x, int y) {
+  void SetPlatform(int x, int y) {
     Platform p = {{x, y, platformSurface->w, platformSurface->h}, x};
-    platforms[i] = p;
+    platforms.push_back(p);
   }
 
   void LoadLevel() {
     player.pos.y = 150;
-    SetPlatform(0, 0, 390);
-    SetPlatform(1, 400, 350);
-    SetPlatform(2, 800, 300);
-    SetPlatform(3, 1000, 250);
-    SetPlatform(4, 1400, 350);
-    SetPlatform(5, 1800, 270);
-    SetPlatform(6, 2200, 400);
-    SetPlatform(7, 2600, 350);
-    SetPlatform(8, 3000, 400);
-    SetPlatform(9, 3400, 300);
+    SetPlatform(0, 390);
+    SetPlatform(400, 350);
+    SetPlatform(800, 300);
+    SetPlatform(1000, 250);
+    SetPlatform(1400, 350);
+    SetPlatform(1800, 270);
+    SetPlatform(2200, 400);
+    SetPlatform(2600, 350);
+    SetPlatform(3000, 400);
+    SetPlatform(3400, 300);
   }
 
   void Close() {
@@ -367,8 +365,7 @@ class Game {
   }
 
   void DrawPlatforms() {   
-    for (int i = 0; i < 10; i++) {
-      Platform p = platforms[i];
+    for (Platform p : platforms) {
       // Box has relative to screen values
       BetterDrawSurface(screenSurface, platformSurface, p.box.x, p.box.y);
 

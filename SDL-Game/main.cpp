@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cfloat>
 #include "functions.h"
+#include "vector.h"
 #include "player.h"
 #include "game.h"
 
