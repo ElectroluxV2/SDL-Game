@@ -17,7 +17,8 @@ class Game {
   const int SCREEN_FPS = 60;
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
 
-  bool collisionDetected = false;
+  int deathCounter = 0;
+  int bestProgres = 0;
 
   // Jump logic
   int ticksTimePressed = 0;
@@ -202,7 +203,7 @@ class Game {
 
     void Reset() {
       pos.x = 0;
-      pos.y = 0;
+      pos.y = 50;
       acc.x = 0;
       acc.y = 0;
     }
@@ -224,8 +225,13 @@ class Game {
 
       // Folow on y axyis
       player.box.y = -player.pos.y + 300;
-
-      player.OnPhysics(platforms, 10);
+      if (player.pos.y < -800 && (player.pos.x / 13500) * 100.0 > bestProgres) {
+        bestProgres = (player.pos.x / 13500) * 100.0;
+        startTime = SDL_GetTicks();
+        player.Reset();
+        deathCounter++;
+      }
+      if (!(player.pos.y < -800)) player.OnPhysics(platforms, 10);
   }
 
   bool Load() {
@@ -370,8 +376,8 @@ class Game {
       quit = true;
     }
     if (key[SDL_SCANCODE_N]) {
-      player.Reset();
       startTime = SDL_GetTicks();
+      player.Reset();
     }
     // Event handler
     SDL_Event e{};
@@ -388,7 +394,7 @@ class Game {
     DrawRectangle(screenSurface, 4, 45, SCREEN_WIDTH - 8, 431, green, NULL);
 
     char text[128];
-    sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime)/1000.0);
+    sprintf(text, "Death counter: %d, Best progress: %d, FPS: %.0f Time: %.0f sec", deathCounter, bestProgres, fps, (SDL_GetTicks() - startTime)/1000.0);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
 
     sprintf(text, "Progres: %.0f%%", ((player.pos.x / 13500) * 100.0 > 100) ? 100 : (player.pos.x / 13500) * 100.0);
@@ -406,10 +412,10 @@ class Game {
     /*sprintf(text, "accelerationX: %.0f, posX: %.0f, ", player.acc.x, player.pos.x);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);
     sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime) / 1000.0);
-    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
+    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);*/
 
-    sprintf(text, "accelerationY: %.0f, posY: %.0f,", player.acc.y, player.GetPos().y);
-    sprintf(text, "accelerationY: %f,   posY: %f", player.acc.y, player.GetPos().y);
+    /*sprintf(text, "accelerationY: %.0f, posY: %.0f,", player.acc.y, player.pos.y);
+    sprintf(text, "accelerationY: %f,   posY: %f", player.acc.y, player.pos.y);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);*/
   }
 
