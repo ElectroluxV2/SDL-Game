@@ -5,6 +5,7 @@ const float ACCELERATION_PER_TICK = 1; // 0.4
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
+const float MAX_DASH_TIME = 0.1;
 
 const bool DEBUG = false;
 
@@ -24,6 +25,13 @@ class Game {
   int ticksTimePressed = 0;
   bool preventToLongJump = false;
 
+  // Dash logic
+  int ticksPassed = 0;
+  bool pressed = false;
+  float startingAccX = 0;
+  int constY = 0;
+  int constX = 0;
+
   // The window we'll be rendering to
   SDL_Window* window = NULL;
 
@@ -42,12 +50,20 @@ class Game {
   // Platforms
   SDL_Surface* platformSurface = NULL;
 
-  // Platfrom array
+  // Struct of in game objects
   struct Platform {
     SDL_Rect box = { 0, 0, 0, 0 };
     int onMapPlacementX = 0;
   };
+
+  // Platfrom array
   Vector<Platform> platforms;
+
+  // Obstacles
+  SDL_Surface* obstacleSurface = NULL;
+
+  // Obstacles array
+  Vector<Platform> obstacles;
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -77,6 +93,7 @@ class Game {
   struct Player {
     bool airBorn = false;
     int jumpCount = 0;
+    int dashCount = 0;
     SDL_Rect box = {
       0,
       0,
@@ -105,7 +122,6 @@ class Game {
 
     void IncrementJump() {
       jumpCount++;
-
       airBorn = true;
     }
 
@@ -121,6 +137,18 @@ class Game {
       acc.y += ACCELERATION_PER_TICK;
 
       return true;
+    }
+
+    void IncrementDash() {
+      dashCount++;
+      jumpCount--;
+    }
+
+    void Dash(int x, int y) {
+      if (dashCount > 1) return;
+      pos.y = y;
+      pos.x = x;
+      acc.x += 50;
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
@@ -152,6 +180,7 @@ class Game {
         if (checkCollision(box, p.box)) {
           // Reenable jump on floor hit
           jumpCount = 0;
+          dashCount = 0;
           
           // Restore player's box position
           box.y = playersRelativeY;
@@ -370,7 +399,26 @@ class Game {
       if (ticksTimePressed > ticks) {
         ticksTimePressed = 0;
         player.IncrementJump();
-      };    
+      }
+    }
+    if (key[SDL_SCANCODE_X] && !pressed) {
+      startingAccX = player.acc.x;
+      pressed = true;
+      constX = player.pos.x;
+      constY = player.pos.y;
+    } else {
+      if (pressed) {
+        ticksPassed += ticks;
+        if (ticksPassed <= MAX_DASH_TIME * fps * ticks) {
+          player.Dash(constX, constY);
+          player.IncrementDash();
+        } else {
+          ticksPassed = 0;
+          pressed = false;
+          player.acc.x = startingAccX;
+          startingAccX = 0;
+        }
+      }
     }
     if (key[SDL_SCANCODE_ESCAPE]) {
       quit = true;
