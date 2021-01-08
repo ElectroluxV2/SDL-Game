@@ -3,6 +3,7 @@ const float PLAYER_FORCE = 0.5; // 0.5
 const float ACCELERATION_PER_TICK = 1; // 0.4
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
+const float JUMP_FORCE_CAP = 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 
 const bool DEBUG = false;
@@ -15,6 +16,7 @@ class Game {
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
 
   bool collisionDetected = false;
+  float jumpStrength = 1;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -95,7 +97,7 @@ class Game {
       acc.x -= f;
     }
 
-    void Jump() {
+    void Jump(float* jumpStrength) {
       // Can't jump while jumping
       if (airBorn) return;
 
@@ -103,10 +105,13 @@ class Game {
       if (jumpCount >= 2) {
         return;
       }
+      if (*jumpStrength > JUMP_FORCE_CAP) {
+        *jumpStrength = 1;
+      }
       jumpCount++;
 
       airBorn = true;
-      acc.y += ACCELERATION_PER_TICK * 8;
+      acc.y += ACCELERATION_PER_TICK * 8 * (*jumpStrength);
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
@@ -303,8 +308,8 @@ class Game {
     printf("Successfully closed\n");
   }
 
-  void HandleEvents() {
-    // keyboard mocarz obluhuje
+  void HandleEvents(int ticks) {
+    // keyboard states handler
     const Uint8 *key = SDL_GetKeyboardState(NULL);
     if (key[SDL_SCANCODE_RIGHT]) {
       player.AddAccelerationX(ACCELERATION_PER_TICK);
@@ -313,7 +318,9 @@ class Game {
       player.SubAccelerationX(ACCELERATION_PER_TICK);
     }
     if (key[SDL_SCANCODE_Z]) {
-      player.Jump();
+      jumpStrength += ticks / 1000;
+      printf("Strength: %f\n", jumpStrength);
+      player.Jump(&jumpStrength);
     }
     if (key[SDL_SCANCODE_ESCAPE]) {
       quit = true;
@@ -418,7 +425,8 @@ class Game {
     while (!quit) {
       // Handle events on queue
       capTimer.start();
-      HandleEvents();
+      HandleEvents(fpsTimer.getTicks());
+      SDL_PumpEvents();
 
       // Handle physics
       Physics();
