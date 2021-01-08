@@ -225,8 +225,9 @@ class Game {
 
       // Folow on y axyis
       player.box.y = -player.pos.y + 300;
-      if (player.pos.y < -800 && (player.pos.x / 13500) * 100.0 > bestProgres) {
-        bestProgres = (player.pos.x / 13500) * 100.0;
+
+      if (player.pos.y < -800) {
+        if ((player.pos.x / 13500) * 100.0 > bestProgres) bestProgres = (player.pos.x / 13500) * 100.0;
         startTime = SDL_GetTicks();
         player.Reset();
         deathCounter++;
@@ -349,6 +350,8 @@ class Game {
     printf("Successfully closed\n");
   }
 
+  bool chuj = false;
+
   void HandleEvents(int ticks) {
     // keyboard mocarz obluhuje
     const Uint8 *key = SDL_GetKeyboardState(NULL);
@@ -376,8 +379,14 @@ class Game {
       quit = true;
     }
     if (key[SDL_SCANCODE_N]) {
+      chuj = true;
       startTime = SDL_GetTicks();
       player.Reset();
+    } else {
+      if (chuj) {
+        chuj = false;
+        deathCounter++;
+      }
     }
     // Event handler
     SDL_Event e{};
