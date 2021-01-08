@@ -98,13 +98,13 @@ class Game {
       acc.x -= f;
     }
 
-    void Jump(int ticks) {
+    bool Jump(int ticks) {
       // Can't jump while jumping
-      if (airBorn) return;
+      if (airBorn) return false;
 
       // Can't jump more than 2 times in row
       if (jumpCount >= 2) {
-        return;
+        return false;
       }
 
       int strength = ticks / 100;
@@ -115,6 +115,8 @@ class Game {
 
       airBorn = true;
       acc.y += ACCELERATION_PER_TICK * (8 + strength);
+
+      return true;
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
@@ -324,8 +326,9 @@ class Game {
       ticksTimePressed += ticks;
 
       if (ticksTimePressed >= 0.5 * fps * ticks) {  // 0.5 seconds in fps
-        player.Jump(ticksTimePressed);
-        ticksTimePressed = 0;
+        if (player.Jump(ticksTimePressed)) {
+          ticksTimePressed = 0;
+        }
       }
 
       //printf("pressed\n");
