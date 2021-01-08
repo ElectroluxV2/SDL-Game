@@ -6,7 +6,7 @@ const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
 
-const bool DEBUG = false;
+const bool DEBUG = true;
 
 class Game {
   const int SCREEN_WIDTH = 640;
@@ -111,7 +111,7 @@ class Game {
       if (airBorn) return false;
 
       // Can't jump more than 2 times in row
-      if (jumpCount >= 2) {
+      if (jumpCount >= 2 && !DEBUG) {
         return false;
       }
 
@@ -206,6 +206,13 @@ class Game {
     }
   } player;
 
+  void LongBoi(int howManyShortBoys, int x, int y) {
+    for (int i = 0; i < howManyShortBoys; i++) {
+      SetPlatform(x, y);
+      x += platformSurface->w;
+    }
+  }
+
   void Physics() {
       // Follow player movement
       for (Platform& p : platforms) {
@@ -287,8 +294,11 @@ class Game {
 
   void LoadLevel() {
     player.pos.y = 150;
-    SetPlatform(0, 390);
-    SetPlatform(400, 350);
+    LongBoi(3, 0, 350);
+    SetPlatform(70, 100);
+    SetPlatform(250, 100);
+    SetPlatform(3200, 400);
+    /*SetPlatform(400, 350);
     SetPlatform(800, 300);
     SetPlatform(1000, 250);
     SetPlatform(1400, 350);
@@ -296,7 +306,7 @@ class Game {
     SetPlatform(2200, 400);
     SetPlatform(2600, 350);
     SetPlatform(3000, 400);
-    SetPlatform(3400, 300);
+    SetPlatform(3400, 300);*/
   }
 
   void Close() {
@@ -402,6 +412,7 @@ class Game {
   void DrawPlayer() { 
     BetterDrawSurface(screenSurface, juanSurface, 0 , 300 - player.pos.y);
     if (DEBUG) {
+      if (player.box.x < 0 || player.box.x + player.box.w > SCREEN_WIDTH || player.box.y < 0 || player.box.y + player.box.h > SCREEN_HEIGHT) return;
       DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
     }
   }
