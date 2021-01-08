@@ -3,7 +3,7 @@ const float PLAYER_FORCE = 0.5; // 0.5
 const float ACCELERATION_PER_TICK = 1; // 0.4
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
-const float JUMP_FORCE_CAP = 3;
+const float JUMP_FORCE_CAP = 20;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 
 const bool DEBUG = false;
@@ -17,6 +17,7 @@ class Game {
 
   bool collisionDetected = false;
   float jumpStrength = 1;
+  bool pressed = false;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -106,12 +107,12 @@ class Game {
         return;
       }
       if (*jumpStrength > JUMP_FORCE_CAP) {
-        *jumpStrength = 1;
+        *jumpStrength = 0;
       }
       jumpCount++;
 
       airBorn = true;
-      acc.y += ACCELERATION_PER_TICK * 8 * (*jumpStrength);
+      acc.y += ACCELERATION_PER_TICK * 8 + (*jumpStrength)/100;
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
@@ -318,7 +319,7 @@ class Game {
       player.SubAccelerationX(ACCELERATION_PER_TICK);
     }
     if (key[SDL_SCANCODE_Z]) {
-      jumpStrength += ticks / 1000;
+      jumpStrength += ticks / 10;
       printf("Strength: %f\n", jumpStrength);
       player.Jump(&jumpStrength);
     }
@@ -417,15 +418,19 @@ class Game {
     //The frames per second cap timer
     LTimer capTimer;
 
+    LTimer physicsTimer;
+
     // Start counting frames per second
     int countedFrames = 0;
     fpsTimer.start();
+    physicsTimer.start();
 
     // While application is running
     while (!quit) {
       // Handle events on queue
       capTimer.start();
-      HandleEvents(fpsTimer.getTicks());
+      HandleEvents(physicsTimer.getTicks());
+      physicsTimer.start();
       SDL_PumpEvents();
 
       // Handle physics
