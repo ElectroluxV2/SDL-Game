@@ -11,8 +11,8 @@ const bool DEBUG = false;
 int finishTime = 0;
 
 class Game {
-  const int SCREEN_WIDTH = 640;
-  const int SCREEN_HEIGHT = 480;
+  const int SCREEN_WIDTH = 1920;
+  const int SCREEN_HEIGHT = 1080;
 
   const int SCREEN_FPS = 60;
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
@@ -254,6 +254,8 @@ class Game {
     SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+
+    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 
     // Get window surface
     screenSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
