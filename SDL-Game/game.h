@@ -4,6 +4,7 @@ const float ACCELERATION_PER_TICK = 1; // 0.4
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
+const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
 
 const bool DEBUG = false;
 
@@ -15,6 +16,10 @@ class Game {
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
 
   bool collisionDetected = false;
+
+  // Jump logic
+  int ticksTimePressed = 0;
+  bool preventToLongJump = false;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -95,18 +100,24 @@ class Game {
       acc.x -= f;
     }
 
-    void Jump() {
-      // Can't jump while jumping
-      if (airBorn) return;
-
-      // Can't jump more than 2 times in row
-      if (jumpCount >= 2) {
-        return;
-      }
+    void IncrementJump() {
       jumpCount++;
 
       airBorn = true;
-      acc.y += ACCELERATION_PER_TICK * 8;
+    }
+
+    bool Jump() {
+      // Can't jump while jumping
+      if (airBorn) return false;
+
+      // Can't jump more than 2 times in row
+      if (jumpCount >= 2) {
+        return false;
+      }
+
+      acc.y += ACCELERATION_PER_TICK;
+
+      return true;
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
@@ -303,7 +314,7 @@ class Game {
     printf("Successfully closed\n");
   }
 
-  void HandleEvents() {
+  void HandleEvents(int ticks) {
     // keyboard mocarz obluhuje
     const Uint8 *key = SDL_GetKeyboardState(NULL);
     if (key[SDL_SCANCODE_RIGHT]) {
@@ -313,7 +324,18 @@ class Game {
       player.SubAccelerationX(ACCELERATION_PER_TICK);
     }
     if (key[SDL_SCANCODE_Z]) {
-      player.Jump();
+      ticksTimePressed += ticks;
+      if (!preventToLongJump) player.Jump();
+   
+      if (ticksTimePressed >= MAX_JUMP_TIME * fps * ticks && !preventToLongJump) {  // seconds in fps
+        preventToLongJump = true;
+      }
+    } else {
+      preventToLongJump = false;
+      if (ticksTimePressed > ticks) {
+        ticksTimePressed = 0;
+        player.IncrementJump();
+      };    
     }
     if (key[SDL_SCANCODE_ESCAPE]) {
       quit = true;
@@ -407,18 +429,25 @@ class Game {
     // The frames per second timer
     LTimer fpsTimer;
 
-    //The frames per second cap timer
+    // The frames per second cap timer
     LTimer capTimer;
+
+    // The time between ticks
+    LTimer tickTimer;
 
     // Start counting frames per second
     int countedFrames = 0;
     fpsTimer.start();
 
+    tickTimer.start();
+
     // While application is running
     while (!quit) {
       // Handle events on queue
       capTimer.start();
-      HandleEvents();
+
+      HandleEvents(tickTimer.getTicks());
+      tickTimer.start();
 
       // Handle physics
       Physics();
