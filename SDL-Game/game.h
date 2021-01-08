@@ -6,7 +6,9 @@ const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
 
-const bool DEBUG = true;
+const bool DEBUG = false;
+
+int finishTime = 0;
 
 class Game {
   const int SCREEN_WIDTH = 640;
@@ -293,11 +295,26 @@ class Game {
   }
 
   void LoadLevel() {
-    player.pos.y = 150;
+    player.pos.y = 50;
     LongBoi(3, 0, 350);
     SetPlatform(70, 100);
     SetPlatform(250, 100);
     SetPlatform(3200, 400);
+    SetPlatform(3400, 120);
+    SetPlatform(5800, 250);
+    SetPlatform(7620, 250);
+    SetPlatform(8120, 100);
+    LongBoi(2, 10720, 400);
+    SetPlatform(10650, 150);
+    SetPlatform(11050, 100);
+    SetPlatform(11450, 150);
+    LongBoi(10, 11850, 50);
+    for (int i = 0; i < 25; i++) {
+      SetPlatform(11850, 50 - (i * platformSurface->h));
+    }
+    SetPlatform(12000, 230);
+    SetPlatform(13000, 230);
+    SetPlatform(13500, 50);
     /*SetPlatform(400, 350);
     SetPlatform(800, 300);
     SetPlatform(1000, 250);
@@ -371,6 +388,18 @@ class Game {
     char text[128];
     sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime)/1000.0);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
+
+    sprintf(text, "Progres: %.0f%%", ((player.pos.x / 13500) * 100.0 > 100) ? 100 : (player.pos.x / 13500) * 100.0);
+    DrawString(screenSurface, screenSurface->w / 4 - strlen(text) * 8 / 2, 10, text, charsetSurface);
+
+    if (player.pos.x > 13500 && player.pos.y >= 50) {
+      if (finishTime == 0) {
+        finishTime = (SDL_GetTicks() - startTime) / 1000.0;
+      }
+      sprintf(text, "jakim chujem to przeszedles, gratuluje... czas: %d sekundy", finishTime);
+      DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8/2, 30, text, charsetSurface);
+
+    }
 
     /*sprintf(text, "accelerationX: %.0f, posX: %.0f, ", player.acc.x, player.pos.x);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);
