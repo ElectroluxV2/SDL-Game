@@ -404,7 +404,7 @@ class Game {
 
   void LoadLevel() {
     player.pos.y = 150;
-    SetPlatform(0, 390);
+    /*SetPlatform(0, 390);
     SetPlatform(400, 350);
     SetPlatform(800, 300);
     SetPlatform(1000, 250);
@@ -413,7 +413,10 @@ class Game {
     SetPlatform(2200, 400);
     SetPlatform(2600, 350);
     SetPlatform(3000, 400);
-    SetPlatform(3400, 300);
+    SetPlatform(3400, 300);*/
+    for (int i = 0; i < 100; i++) {
+      SetPlatform(0 + platformSurface->w * i, 400);
+    }
   }
 
   void Close() {
@@ -443,10 +446,18 @@ class Game {
     printf("Successfully closed\n");
   }
 
+  bool b1 = false;
+
   void HandleEvents(int ticks) {
     // keyboard mocarz obluhuje
     const Uint8 *key = SDL_GetKeyboardState(NULL);
-    if (key[SDL_SCANCODE_RIGHT]) {
+    if (key[SDL_SCANCODE_D]) {
+      b1 = true;
+    } else if (b1) {
+      mode = !mode;
+      b1 = false;
+    }
+    if (key[SDL_SCANCODE_RIGHT] || mode) {
       player.AddAccelerationX(ACCELERATION_PER_TICK);
     }
     if (key[SDL_SCANCODE_LEFT]) {
