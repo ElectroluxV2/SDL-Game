@@ -182,14 +182,17 @@ class Game {
         // Check if can pass by
         if (checkCollision(box, p.box)) {
           // Reenable jump on floor hit
-          state = 0;
           jumpCount = 0;
+
+          // When player is not on platform
+          state = 0;
           
           // Restore player's box position
           box.y = playersRelativeY;
           // Remove any y acceleration on player
           acc.y = 0;
 
+          // When player is on platform
           p.state = 1;
      
           // Prevent any changes to player's pos
