@@ -453,6 +453,8 @@ class Game {
                               &platformSurfaceWhenPlayerIsOnIt))
       return false;
 
+    if (!LoadOptimizedSurface("angry_cat_0.bmp", &screenSurface, &tmp)) return false;
+
     // Add 15% offset
     player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
 
