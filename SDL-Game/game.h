@@ -101,10 +101,6 @@ class Game {
   // false -> steering with arrows, true -> automatic movment
   bool mode = false;
 
-  // Dolphins
-  Sprite dolphin;
-  unsigned dolphinCount = 0;
-
   // Camera follow player on Y axis
   int ypad = 0;
   int tagretypad = 0; // But smooth
@@ -305,6 +301,10 @@ class Game {
   // Score is needed to calc ammount of Dolphins
   int score = 0;
 
+  // Dolphins
+  Sprite dolphin;
+  unsigned dolphinCount = 0;
+
   void Physics(int timeUnit) {
     int tmp = -player.pos.y + 300 - SCREEN_HEIGHT + 300;
 
@@ -350,6 +350,9 @@ class Game {
     int aScore = (int)player.pos.x / 100;
     if (aScore > score)
       score = aScore;
+
+    // Dolphin count is depended on score
+    int dolphinScore = 0;
   }
 
   bool Load() {
@@ -434,6 +437,11 @@ class Game {
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
     if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
 
+    if (!LoadOptimizedSurface("d0.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d1.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d2.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d3.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
+
     // Add 15% offset
     player.Load(player.normalState.surfaces.Get(0)->w, player.normalState.surfaces.Get(0)->h, platformSurface->h * 0.15);
 
@@ -488,6 +496,10 @@ class Game {
     }
 
     for (SDL_Surface* s : player.fallState.surfaces) {
+      FreeSurface(&s);
+    }
+
+    for (SDL_Surface *s : dolphin.surfaces) {
       FreeSurface(&s);
     }
 
