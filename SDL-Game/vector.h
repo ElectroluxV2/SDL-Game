@@ -53,7 +53,7 @@ struct Vector {
   }
 
   T* Next() {
-    if (count == allocatedSize) Reallocate(2 * allocatedSize);
-    return &root[++count];
+    push_back(NULL);
+    return root + count - 1;
   }
 };
