@@ -46,4 +46,9 @@ struct Vector {
     if (count * 4 < allocatedSize) Reallocate(allocatedSize / 2);
     return toReturn;
   }
+
+  T Get(int index) {
+    //if (index < 0 || index > count) return NULL;
+    return root[index];
+  }
 };

@@ -5,6 +5,7 @@ const float ACCELERATION_PER_TICK = 1; // 0.4
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
+const float MAX_DASH_TIME = 20;
 
 const bool DEBUG = false;
 
@@ -20,6 +21,10 @@ class Game {
   // Jump logic
   int ticksTimePressed = 0;
   bool preventToLongJump = false;
+
+  // Dash logic
+  int ticksPassed = 0;
+  bool pressedOnce = false;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -63,9 +68,9 @@ class Game {
         }
         counter = 0;
       }
-     
 
-      return *(surfaces.root + state);
+      //return *(surfaces.root + state);
+      return surfaces.Get(state);
     }
   };
 
@@ -105,7 +110,12 @@ class Game {
     int state = 0;
 
     bool airBorn = false;
+    bool dashing = false;
     int jumpCount = 0;
+    int dashCount = 0;
+    int dashTimer = 0;
+    int cooldownDash = 0;
+
     SDL_Rect box = {
       0,
       0,
@@ -138,7 +148,6 @@ class Game {
 
     void IncrementJump() {
       jumpCount++;
-
       airBorn = true;
     }
 
@@ -156,20 +165,33 @@ class Game {
       return true;
     }
 
+    void Dash() {
+      if (dashing) return;
+      if (cooldownDash > 100000) cooldownDash = 0;
+      else return;
+      dashing = true;
+      state = 0;
+      acc.x += 50;
+      dashTimer = 0;
+    }
+
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
       float tmp = pos.y; // Do not change player pos before colision test
-      if (acc.y > 0) {
-        // Jump
-        state = 1;
-        tmp += JUMP_FORCE * acc.y;
-        acc.y -= RESISTANCE;
-      } else {
-        // Fall
-        state = 2;
-        tmp -= GRAVITY_FORCE;
+      if (!dashing) {    // if dashing ignore changes on y
+        if (acc.y > 0) {
+          // Jump
+          state = 1;
+          tmp += JUMP_FORCE * acc.y;
+          acc.y -= RESISTANCE;
+        }
+        else {
+          // Fall
+          state = 2;
+          tmp -= GRAVITY_FORCE;
 
-        // Not in air anymore
-        airBorn = false;
+          // Not in air anymore
+          airBorn = false;
+        }
       }
 
       // Remove left acceleration
@@ -211,10 +233,13 @@ class Game {
     }
 
     void MovePhysics(Vector<Platform> platforms, int platformCount) {
-      if (acc.x > 0) acc.x -= RESISTANCE;
-      else if (acc.x < 0) acc.x += RESISTANCE;
-      if (abs(acc.x) < RESISTANCE) acc.x = 0;
-      if (AreSame(acc.x, 0)) return;
+      if (!dashing) { // if dashing ignore changes on x
+        if (acc.x > 0) acc.x -= RESISTANCE;
+        else if (acc.x < 0) acc.x += RESISTANCE;
+        if (abs(acc.x) < RESISTANCE) acc.x = 0;
+        if (AreSame(acc.x, 0)) return;
+      }
+      
 
       // Position player want to go
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
@@ -239,7 +264,15 @@ class Game {
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
 
-    void OnPhysics(Vector<Platform> platforms, int platformCount) {
+    void OnPhysics(Vector<Platform> platforms, int platformCount, int fps_ticks) {
+      if (dashing) {
+        if (dashTimer >= fps_ticks * MAX_DASH_TIME) {
+          dashTimer = 0;
+          dashing = false;
+          dashCount++;
+          jumpCount--;
+        } else dashTimer += fps_ticks;
+      } else cooldownDash += fps_ticks;
       JumpPhysics(platforms, platformCount);
       MovePhysics(platforms, platformCount);
     }
@@ -261,7 +294,7 @@ class Game {
     }
   } player;
 
-  void Physics() {
+  void Physics(int fps_ticks) {
       // Follow player movement
       for (Platform& p : platforms) {
         int destX = p.onMapPlacementX - player.pos.x;
@@ -271,7 +304,7 @@ class Game {
       // Folow on y axyis
       player.box.y = -player.pos.y + 300;
 
-      player.OnPhysics(platforms, 10);
+      player.OnPhysics(platforms, 10, fps_ticks);
   }
 
   bool Load() {
@@ -433,6 +466,9 @@ class Game {
         player.IncrementJump();
       };    
     }
+    if (key[SDL_SCANCODE_X]) {
+      player.Dash();
+    }
     if (key[SDL_SCANCODE_ESCAPE]) {
       quit = true;
     }
@@ -541,12 +577,11 @@ class Game {
     while (!quit) {
       // Handle events on queue
       capTimer.start();
-
       HandleEvents(tickTimer.getTicks());
-      tickTimer.start();
 
       // Handle physics
-      Physics();
+      Physics(tickTimer.getTicks() * (int)fps);
+      tickTimer.start();
 
       // Calculate fps
       fps = countedFrames / (fpsTimer.getTicks() / (float) 1000);
