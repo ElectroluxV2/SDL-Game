@@ -93,6 +93,10 @@ class Game {
   // false -> steering with arrows, true -> automatic movment
   bool mode = false;
 
+  // Dolphins
+  Sprite dolphin;
+  unsigned dolphinCount = 0;
+
   // Player x
   struct Player {
     Sprite normalState;
