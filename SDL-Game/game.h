@@ -73,8 +73,6 @@ class Game {
         }
         counter = 0;
       }
-
-      // return *(surfaces.root + state);
       return surfaces.Get(state);
     }
   };

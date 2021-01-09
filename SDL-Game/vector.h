@@ -48,7 +48,12 @@ struct Vector {
   }
 
   T Get(int index) {
-    //if (index < 0 || index > count) return NULL;
+    if (index < 0 || index > count) return NULL;
     return root[index];
+  }
+
+  T* Next() {
+    if (count == allocatedSize) Reallocate(2 * allocatedSize);
+    return &root[++count];
   }
 };
