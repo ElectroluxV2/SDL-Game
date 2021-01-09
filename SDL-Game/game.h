@@ -5,7 +5,7 @@ const float ACCELERATION_PER_TICK = 1; // 0.4
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
-const float MAX_DASH_TIME = 0.1;
+const float MAX_DASH_TIME = 2;
 
 const bool DEBUG = false;
 
@@ -27,10 +27,7 @@ class Game {
 
   // Dash logic
   int ticksPassed = 0;
-  bool pressed = false;
-  float startingAccX = 0;
-  int constY = 0;
-  int constX = 0;
+  bool pressedOnce = false;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -92,8 +89,10 @@ class Game {
   // Player x
   struct Player {
     bool airBorn = false;
+    bool dashing = false;
     int jumpCount = 0;
     int dashCount = 0;
+    int dashTimer = 0;
     SDL_Rect box = {
       0,
       0,
@@ -139,32 +138,30 @@ class Game {
       return true;
     }
 
-    void IncrementDash() {
-      dashCount++;
-      if (jumpCount == 2) jumpCount = 1;
-      if (jumpCount == 1) jumpCount = 0;
-      printf("jump count: %d\n", jumpCount);
-    }
-
-    void Dash(int x, int y) {
-      if (dashCount > 1) return;
-      pos.y = y;
-      pos.x = x;
-      acc.x += 50;
+    void Dash() {
+      if (dashing) return;
+      dashing = true;
+      printf("Dash START!\n");
+      acc.x += 10;
+      dashTimer = 0;
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
       float tmp = pos.y; // Do not change player pos before colision test
-      if (acc.y > 0) {
-        // Jump
-        tmp += JUMP_FORCE * acc.y;
-        acc.y -= RESISTANCE;
-      } else {
-        // Fall
-        tmp -= GRAVITY_FORCE;
-        // Not in air anymore
-        airBorn = false;
+      if (!dashing) {
+        if (acc.y > 0) {
+          // Jump
+          tmp += JUMP_FORCE * acc.y;
+          acc.y -= RESISTANCE;
+        }
+        else {
+          // Fall
+          tmp -= GRAVITY_FORCE;
+          // Not in air anymore
+          airBorn = false;
+        }
       }
+      
 
       // Remove left acceleration
       if (abs(acc.y) < RESISTANCE) acc.y = 0;
@@ -198,10 +195,12 @@ class Game {
     }
 
     void MovePhysics(Vector<Platform> platforms, int platformCount) {
-      if (acc.x > 0) acc.x -= RESISTANCE;
-      else if (acc.x < 0) acc.x += RESISTANCE;
-      if (abs(acc.x) < RESISTANCE) acc.x = 0;
-      if (AreSame(acc.x, 0)) return;
+      if (!dashing) {
+        if (acc.x > 0) acc.x -= RESISTANCE;
+        else if (acc.x < 0) acc.x += RESISTANCE;
+        if (abs(acc.x) < RESISTANCE) acc.x = 0;
+        if (AreSame(acc.x, 0)) return;
+      }
 
       // Position player want to go
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
@@ -226,7 +225,12 @@ class Game {
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
 
-    void OnPhysics(Vector<Platform> platforms, int platformCount) {
+    void OnPhysics(Vector<Platform> platforms, int platformCount, int fps_ticks) {
+      if (dashTimer >= fps_ticks * MAX_DASH_TIME) {
+        dashTimer = 0;
+        dashing = false;
+        printf("Dash STOP\n", fps_ticks);
+      } else dashTimer += fps_ticks;
       JumpPhysics(platforms, platformCount);
       MovePhysics(platforms, platformCount);
     }
@@ -246,7 +250,7 @@ class Game {
     }
   }
 
-  void Physics() {
+  void Physics(int fps_ticks) {
       // Follow player movement
       for (Platform& p : platforms) {
         int destX = p.onMapPlacementX - player.pos.x;
@@ -262,7 +266,7 @@ class Game {
         player.Reset();
         deathCounter++;
       }
-      if (!(player.pos.y < -800)) player.OnPhysics(platforms, 10);
+      if (!(player.pos.y < -800)) player.OnPhysics(platforms, 10, fps_ticks);
   }
 
   bool Load() {
@@ -405,25 +409,8 @@ class Game {
         player.IncrementJump();
       }
     }
-    if (key[SDL_SCANCODE_X] && !pressed) {
-      startingAccX = player.acc.x;
-      pressed = true;
-      constX = player.pos.x;
-      constY = player.pos.y;
-      player.IncrementDash();
-    } else {
-      if (pressed) {
-        ticksPassed += ticks;
-        if (ticksPassed <= MAX_DASH_TIME * fps * ticks) {
-          player.Dash(constX, constY);
-        } else {
-          ticksPassed = 0;
-          pressed = false;
-          printf("z\n");
-          player.acc.x = startingAccX;
-          startingAccX = 0;
-        }
-      }
+    if (key[SDL_SCANCODE_X]) {
+      player.Dash();
     }
     if (key[SDL_SCANCODE_ESCAPE]) {
       quit = true;
@@ -432,11 +419,9 @@ class Game {
       chuj = true;
       startTime = SDL_GetTicks();
       player.Reset();
-    } else {
-      if (chuj) {
-        chuj = false;
-        deathCounter++;
-      }
+    } else if (chuj) {
+      chuj = false;
+      deathCounter++;
     }
     // Event handler
     SDL_Event e{};
@@ -444,7 +429,7 @@ class Game {
       // User requests quit
       if (e.type == SDL_QUIT) {
         quit = true;
-      }
+      } 
     }
   }
 
@@ -554,10 +539,10 @@ class Game {
       capTimer.start();
 
       HandleEvents(tickTimer.getTicks());
-      tickTimer.start();
 
       // Handle physics
-      Physics();
+      Physics(tickTimer.getTicks() * fps);
+      tickTimer.start();
 
       // Calculate fps
       fps = countedFrames / (fpsTimer.getTicks() / (float) 1000);
