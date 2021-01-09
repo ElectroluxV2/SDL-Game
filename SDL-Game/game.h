@@ -178,7 +178,7 @@ class Game {
       dashTimer = 0;
     }
 
-    void JumpPhysics(Vector<Platform> platforms, int platformCount) {
+    void JumpPhysics(Vector<Platform*> platforms) {
       float tmp = pos.y;  // Do not change player pos before colision test
       if (!dashing) {     // if dashing ignore changes on y
         if (acc.y > 0) {
@@ -206,9 +206,9 @@ class Game {
 
       // Check colision
       // Every platformG
-      for (Platform& p : platforms) {
+      for (Platform* p : platforms) {
         // Check if can pass by
-        if (checkCollision(box, p.box)) {
+        if (checkCollision(box, p->box)) {
           // Reenable jump on floor hit
           jumpCount = 0;
 
@@ -221,12 +221,12 @@ class Game {
           acc.y = 0;
 
           // When player is on platform
-          p.state = 1;
+          p->state = 1;
 
           // Prevent any changes to player's pos
           return;
         } else {
-          p.state = 0;
+          p->state = 0;
         }
       }
 
@@ -234,7 +234,7 @@ class Game {
       pos.y = tmp;
     }
 
-    void MovePhysics(Vector<Platform> platforms, int platformCount) {
+    void MovePhysics(Vector<Platform*> platforms) {
       if (!dashing) {  // if dashing ignore changes on x
         if (acc.x > 0)
           acc.x -= RESISTANCE;
@@ -247,14 +247,14 @@ class Game {
       // Position player want to go
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
       // Every platform
-      for (Platform p : platforms) {
+      for (Platform* p : platforms) {
         // Relative postion of box
-        int platformRelatvieX = p.box.x;
-        p.box.x = p.onMapPlacementX - tmp;
+        int platformRelatvieX = p->box.x;
+        p->box.x = p->onMapPlacementX - tmp;
         // Check if can pass by
-        if (checkCollision(p.box, box)) {
+        if (checkCollision(p->box, box)) {
           // Restore box position
-          p.box.x = platformRelatvieX;
+          p->box.x = platformRelatvieX;
           // Remove any x acceleration on player
           acc.x = 0;
           return;
@@ -267,8 +267,7 @@ class Game {
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
 
-    void OnPhysics(Vector<Platform> platforms, int platformCount,
-                   int timeUnit) {
+    void OnPhysics(Vector<Platform*> platforms, int timeUnit) {
       if (dashing) {
         if (dashTimer >= timeUnit * MAX_DASH_TIME) {
           dashTimer = 0;
@@ -279,8 +278,8 @@ class Game {
           dashTimer += timeUnit;
       } else
         cooldownDash += timeUnit;
-      JumpPhysics(platforms, platformCount);
-      MovePhysics(platforms, platformCount);
+      JumpPhysics(platforms);
+      MovePhysics(platforms);
     }
 
     void Reset() {
@@ -322,16 +321,26 @@ class Game {
 
     // printf("Ypad: %i\n", ypad);
 
+    Vector<Platform*> toCheck;
     // Follow player movement
     for (Platform& p : platforms) {
       int destX = p.onMapPlacementX - player.pos.x;
       p.box.x = destX;
+
+      if (p.box.x + p.box.w < 0) continue;
+      if (p.box.x - p.box.w > SCREEN_WIDTH) continue;
+
+      if (p.box.y - ypad < 0) continue;
+      if (p.box.y - ypad > SCREEN_HEIGHT) continue;
+
+      toCheck.push_back(&p);
     }
+
+    printf("%i\n", toCheck.count);
 
     // Folow on y axyis
     player.box.y = -player.pos.y + 300;
-
-    player.OnPhysics(platforms, 10, timeUnit);
+    player.OnPhysics(toCheck, timeUnit);
   }
 
   bool Load() {
@@ -390,71 +399,34 @@ class Game {
     if (!LoadSurface("cs8x8.bmp", &charsetSurface)) return false;
     SDL_SetColorKey(charsetSurface, true, 0x000000);
 
-    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface))
-      return false;
+    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
 
-    SDL_Surface* tmp{};
-    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface,
-                              &platformSurface))
-      return false;
-    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface,
-                              &platformSurfaceWhenPlayerIsOnIt))
-      return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
 
     // Add 15% offset
-    player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
+    player.Load(player.normalState.surfaces.Get(0)->w, player.normalState.surfaces.Get(0)->h, platformSurface->h * 0.15);
 
     printf("Successfully loaded media\n");
     return true;
@@ -617,21 +589,23 @@ class Game {
 
       // Display hit boxes for debug purposes
       if (DEBUG) {
-        if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y < 0 ||
-            p.box.y + p.box.h > SCREEN_HEIGHT)
+        if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y - ypad < 0 || p.box.y - ypad + p.box.h > SCREEN_HEIGHT)
           continue;
-        DrawRectangle(screenSurface, p.box.x, p.box.y, p.box.w, p.box.h, red,
+        DrawRectangle(screenSurface, p.box.x, p.box.y - ypad, p.box.w, p.box.h, red,
                       red);
       }
     }
   }
 
   void DrawPlayer() {
-    BetterDrawSurface(screenSurface, player.GetSurface(), 0,
-                      300 - player.pos.y - ypad + 20);
+    BetterDrawSurface(screenSurface, player.GetSurface(), 0, 300 - player.pos.y - ypad);
     if (DEBUG) {
-      DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w,
-                    player.box.h, green, black);
+      if (player.box.x < 0 || player.box.x + player.box.w > SCREEN_WIDTH ||
+          player.box.y - ypad < 0 ||
+          player.box.y + player.box.h - ypad > SCREEN_HEIGHT)
+        return;
+      DrawRectangle(screenSurface, player.box.x, player.box.y - ypad,
+                    player.box.w, player.box.h, green, black);
     }
   }
 
