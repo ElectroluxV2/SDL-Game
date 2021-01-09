@@ -105,8 +105,9 @@ class Game {
   Sprite dolphin;
   unsigned dolphinCount = 0;
 
+  // Camera follow player on Y axis
   int ypad = 0;
-  int tagretypad = 0;
+  int tagretypad = 0; // But smooth
 
   // Player x
   struct Player {
@@ -301,6 +302,9 @@ class Game {
     }
   } player;
 
+  // Score is needed to calc ammount of Dolphins
+  int score = 0;
+
   void Physics(int timeUnit) {
     int tmp = -player.pos.y + 300 - SCREEN_HEIGHT + 300;
 
@@ -336,11 +340,16 @@ class Game {
       toCheck.push_back(&p);
     }
 
-    printf("%i\n", toCheck.count);
+    // printf("%i\n", toCheck.count);
 
     // Folow on y axyis
     player.box.y = -player.pos.y + 300;
     player.OnPhysics(toCheck, timeUnit);
+
+    // Calc score
+    int aScore = (int)player.pos.x / 100;
+    if (aScore > score)
+      score = aScore;
   }
 
   bool Load() {
