@@ -42,13 +42,19 @@ class Game {
   SDL_Surface* platformSurface = NULL;
   SDL_Surface* platformSurfaceWhenPlayerIsOnIt = NULL;
 
-  // Platfrom array
+  // Platfroms array
   struct Platform {
     SDL_Rect box = { 0, 0, 0, 0 };
     int onMapPlacementX = 0;
     int state = 0;
   };
   Vector<Platform> platforms;
+
+  // Obstacles
+  SDL_Surface* obstacleSurface = NULL;
+
+  // Obstacles array
+  Vector<Platform> obstacles;
 
   struct Sprite {
    private:
@@ -107,6 +113,7 @@ class Game {
     Sprite normalState;
     Sprite jumpState;
     Sprite fallState;
+    Sprite dashState;
     int state = 0;
 
     bool airBorn = false;
@@ -135,6 +142,7 @@ class Game {
       normalState.nextFrameEvery = 5;
       fallState.nextFrameEvery = 1;
       jumpState.nextFrameEvery = 3;
+      dashState.nextFrameEvery = 4;
     }
 
     void AddAccelerationX(float f) {
@@ -170,7 +178,7 @@ class Game {
       if (cooldownDash > 100000) cooldownDash = 0;
       else return;
       dashing = true;
-      state = 0;
+      state = 3;
       acc.x += 50;
       dashTimer = 0;
     }
@@ -289,8 +297,10 @@ class Game {
         return normalState.GetSurface();
       else if (state == 1)
         return jumpState.GetSurface();
-      else
+      else if (state == 2)
         return fallState.GetSurface();
+      else
+        return dashState.GetSurface();
     }
   } player;
 
@@ -387,6 +397,15 @@ class Game {
     if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, &tmp)) return false;
     player.fallState.surfaces.push_back(tmp);
 
+    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, &tmp)) return false;
+    player.dashState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, &tmp)) return false;
+    player.dashState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, &tmp)) return false;
+    player.dashState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, &tmp)) return false;
+    player.dashState.surfaces.push_back(tmp);
+
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
     if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
 
@@ -402,7 +421,11 @@ class Game {
     platforms.push_back(p);
   }
 
-  void LoadLevel() {
+  void SetObstacle(int x, int y) {
+    Platform obstacle = { {x, y, obstacleSurface->w, obstacleSurface->h}, x };
+  }
+
+  void LoadLevel()  {
     player.pos.y = 150;
     /*SetPlatform(0, 390);
     SetPlatform(400, 350);
