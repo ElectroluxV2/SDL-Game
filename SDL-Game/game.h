@@ -5,7 +5,10 @@ const float ACCELERATION_PER_TICK = 1; // 0.4
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
-const float MAX_DASH_TIME = 2;
+const float MAX_DASH_TIME = 20;
+
+const int SCREEN_FPS = 60;
+const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
 
 const bool DEBUG = false;
 
@@ -14,9 +17,7 @@ int finishTime = 0;
 class Game {
   const int SCREEN_WIDTH = 1920;
   const int SCREEN_HEIGHT = 1080;
-
-  const int SCREEN_FPS = 60;
-  const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+  
 
   int deathCounter = 0;
   int bestProgres = 0;
@@ -93,6 +94,7 @@ class Game {
     int jumpCount = 0;
     int dashCount = 0;
     int dashTimer = 0;
+    int cooldownDash = 0;
     SDL_Rect box = {
       0,
       0,
@@ -140,15 +142,17 @@ class Game {
 
     void Dash() {
       if (dashing) return;
+      printf("cooldown: %d\n", cooldownDash);
+      if (cooldownDash > 100000) cooldownDash = 0;
+      else return;
       dashing = true;
-      printf("Dash START!\n");
-      acc.x += 10;
+      acc.x += 50;
       dashTimer = 0;
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
       float tmp = pos.y; // Do not change player pos before colision test
-      if (!dashing) {
+      if (!dashing) {    // if dashing ignore changes on y
         if (acc.y > 0) {
           // Jump
           tmp += JUMP_FORCE * acc.y;
@@ -178,7 +182,6 @@ class Game {
         if (checkCollision(box, p.box)) {
           // Reenable jump on floor hit
           jumpCount = 0;
-          dashCount = 0;
           
           // Restore player's box position
           box.y = playersRelativeY;
@@ -195,7 +198,7 @@ class Game {
     }
 
     void MovePhysics(Vector<Platform> platforms, int platformCount) {
-      if (!dashing) {
+      if (!dashing) { // if dashing ignore changes on x
         if (acc.x > 0) acc.x -= RESISTANCE;
         else if (acc.x < 0) acc.x += RESISTANCE;
         if (abs(acc.x) < RESISTANCE) acc.x = 0;
@@ -226,11 +229,14 @@ class Game {
     }
 
     void OnPhysics(Vector<Platform> platforms, int platformCount, int fps_ticks) {
-      if (dashTimer >= fps_ticks * MAX_DASH_TIME) {
-        dashTimer = 0;
-        dashing = false;
-        printf("Dash STOP\n", fps_ticks);
-      } else dashTimer += fps_ticks;
+      if (dashing) {
+        if (dashTimer >= fps_ticks * MAX_DASH_TIME) {
+          dashTimer = 0;
+          dashing = false;
+          dashCount++;
+          jumpCount--;
+        } else dashTimer += fps_ticks;
+      } else cooldownDash += fps_ticks;
       JumpPhysics(platforms, platformCount);
       MovePhysics(platforms, platformCount);
     }
@@ -541,7 +547,7 @@ class Game {
       HandleEvents(tickTimer.getTicks());
 
       // Handle physics
-      Physics(tickTimer.getTicks() * fps);
+      Physics(tickTimer.getTicks() * (int)fps);
       tickTimer.start();
 
       // Calculate fps
