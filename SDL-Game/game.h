@@ -141,7 +141,9 @@ class Game {
 
     void IncrementDash() {
       dashCount++;
-      jumpCount--;
+      if (jumpCount == 2) jumpCount = 1;
+      if (jumpCount == 1) jumpCount = 0;
+      printf("jump count: %d\n", jumpCount);
     }
 
     void Dash(int x, int y) {
@@ -160,7 +162,6 @@ class Game {
       } else {
         // Fall
         tmp -= GRAVITY_FORCE;
-
         // Not in air anymore
         airBorn = false;
       }
@@ -409,15 +410,16 @@ class Game {
       pressed = true;
       constX = player.pos.x;
       constY = player.pos.y;
+      player.IncrementDash();
     } else {
       if (pressed) {
         ticksPassed += ticks;
         if (ticksPassed <= MAX_DASH_TIME * fps * ticks) {
           player.Dash(constX, constY);
-          player.IncrementDash();
         } else {
           ticksPassed = 0;
           pressed = false;
+          printf("z\n");
           player.acc.x = startingAccX;
           startingAccX = 0;
         }
