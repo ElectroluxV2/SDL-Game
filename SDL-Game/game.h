@@ -108,6 +108,8 @@ class Game {
   Sprite dolphin;
   unsigned dolphinCount = 0;
 
+  int ypad = 0;
+
   // Player x
   struct Player {
     Sprite normalState;
@@ -305,16 +307,35 @@ class Game {
   } player;
 
   void Physics(int fps_ticks) {
-      // Follow player movement
-      for (Platform& p : platforms) {
-        int destX = p.onMapPlacementX - player.pos.x;
-        p.box.x = destX;
-      }
 
-      // Folow on y axyis
-      player.box.y = -player.pos.y + 300;
+    ypad = -player.pos.y + 300 - SCREEN_HEIGHT + 300;
 
-      player.OnPhysics(platforms, 10, fps_ticks);
+    printf("Ypad: %i\n", ypad);
+
+    // Follow player movement
+    for (Platform& p : platforms) {
+      int destX = p.onMapPlacementX - player.pos.x;
+      p.box.x = destX;
+      // p.box.y += ypad;
+    }
+
+    // Folow on y axyis
+    player.box.y = -player.pos.y + 300;
+    // player.box.y += ypad;
+
+    /*if (player.box.y > SCREEN_HEIGHT) {
+      //printf("W DOL\n");
+      ypad++;
+    } else if (player.box.y < 20) {
+      //printf("W GORE\n");
+      ypad--;
+    } else {
+      ypad = 0;
+    }*/
+      
+      
+
+    player.OnPhysics(platforms, 10, fps_ticks);
   }
 
   bool Load() {
@@ -427,6 +448,10 @@ class Game {
 
   void LoadLevel()  {
     player.pos.y = 150;
+
+
+    //SetPlatform(0, 1000);
+
     /*SetPlatform(0, 390);
     SetPlatform(400, 350);
     SetPlatform(800, 300);
@@ -438,8 +463,12 @@ class Game {
     SetPlatform(3000, 400);
     SetPlatform(3400, 300);*/
     for (int i = 0; i < 100; i++) {
-      SetPlatform(0 + platformSurface->w * i, 400);
+      for (int j = 0; j < 100; j++) {
+        // printf("Y: %i\n", 400 - (25 * j));
+        SetPlatform(50 * j + platformSurface->w * i, 400 - (25 * j) + 1000);
+      }
     }
+
   }
 
   void Close() {
@@ -521,8 +550,8 @@ class Game {
   }
 
   void DrawUI() {
+    DrawRectangle(screenSurface, 0, 0, SCREEN_WIDTH, 45, black, black);
     DrawRectangle(screenSurface, 4, 4, SCREEN_WIDTH - 8, 36, green, black);
-    DrawRectangle(screenSurface, 4, 45, SCREEN_WIDTH - 8, 431, green, NULL);
 
     char text[128];
     sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime)/1000.0);
@@ -555,7 +584,7 @@ class Game {
   void DrawPlatforms() {   
     for (Platform p : platforms) {
       // Box has relative to screen values
-      BetterDrawSurface(screenSurface, p.state == 0 ? platformSurface : platformSurfaceWhenPlayerIsOnIt, p.box.x, p.box.y);
+      BetterDrawSurface(screenSurface, p.state == 0 ? platformSurface : platformSurfaceWhenPlayerIsOnIt, p.box.x, p.box.y - ypad);
 
       // Display hit boxes for debug purposes
       if (DEBUG) {
@@ -566,7 +595,7 @@ class Game {
   }
 
   void DrawPlayer() { 
-    BetterDrawSurface(screenSurface, player.GetSurface(), 0 , 300 - player.pos.y);
+    BetterDrawSurface(screenSurface, player.GetSurface(), 0 , 300 - player.pos.y - ypad);
     if (DEBUG) {
       DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
     }
@@ -577,13 +606,13 @@ class Game {
     // Clear screen
     SDL_FillRect(screenSurface, NULL, black);
 
-    DrawUI();
-    
     DrawBackground();
 
     DrawPlayer();
 
     DrawPlatforms();
+
+    DrawUI();
 
     SDL_UpdateTexture(screenTexture, NULL, screenSurface->pixels, screenSurface->pitch);
     //		SDL_RenderClear(renderer);
