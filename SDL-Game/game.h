@@ -35,11 +35,13 @@ class Game {
 
   // Platforms
   SDL_Surface* platformSurface = NULL;
+  SDL_Surface* platformSurfaceWhenPlayerIsOnIt = NULL;
 
   // Platfrom array
   struct Platform {
     SDL_Rect box = { 0, 0, 0, 0 };
     int onMapPlacementX = 0;
+    int state = 0;
   };
   Vector<Platform> platforms;
 
@@ -176,7 +178,7 @@ class Game {
 
       // Check colision
       // Every platformG
-      for (Platform p : platforms) {
+      for (Platform& p : platforms) {
         // Check if can pass by
         if (checkCollision(box, p.box)) {
           // Reenable jump on floor hit
@@ -187,9 +189,13 @@ class Game {
           box.y = playersRelativeY;
           // Remove any y acceleration on player
           acc.y = 0;
+
+          p.state = 1;
      
           // Prevent any changes to player's pos
           return;
+        } else {
+           p.state = 0;
         }
       }
 
@@ -342,6 +348,7 @@ class Game {
     player.fallState.surfaces.push_back(tmp);
 
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
 
     // Add 15% offset
     player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
@@ -373,6 +380,7 @@ class Game {
     // Deallocate surface
     FreeSurface(&mapSurface);
     FreeSurface(&charsetSurface);
+    FreeSurface(&platformSurfaceWhenPlayerIsOnIt);
 
     for (SDL_Surface* s : player.normalState.surfaces) {
       FreeSurface(&s);
@@ -470,7 +478,7 @@ class Game {
   void DrawPlatforms() {   
     for (Platform p : platforms) {
       // Box has relative to screen values
-      BetterDrawSurface(screenSurface, platformSurface, p.box.x, p.box.y);
+      BetterDrawSurface(screenSurface, p.state == 0 ? platformSurface : platformSurfaceWhenPlayerIsOnIt, p.box.x, p.box.y);
 
       // Display hit boxes for debug purposes
       if (DEBUG) {
