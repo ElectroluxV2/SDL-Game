@@ -562,6 +562,10 @@ class Game {
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10,
                text, charsetSurface);
 
+    sprintf(text, "score: %i, ", score);
+    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26,
+               text, charsetSurface);
+
     /*sprintf(text, "accelerationX: %.0f, posX: %.0f, ", player.acc.x,
     player.pos.x); DrawString(screenSurface, screenSurface->w / 2 - strlen(text)
     * 8 / 2, 26, text, charsetSurface); sprintf(text, "FPS: %.0f Time: %.0f
