@@ -33,9 +33,6 @@ class Game {
   // Contains all possible characters
   SDL_Surface* charsetSurface = NULL;
 
-  // Player
-  SDL_Surface* juanSurface = NULL;
-
   // Platforms
   SDL_Surface* platformSurface = NULL;
 
@@ -45,6 +42,30 @@ class Game {
     int onMapPlacementX = 0;
   };
   Vector<Platform> platforms;
+
+  struct Sprite {
+   private:
+    int state = 0;
+    int counter = 0;
+
+   public:
+    int nextFrameEvery = 10;
+    Vector<SDL_Surface*> surfaces;
+
+
+    SDL_Surface* GetSurface() { 
+      if (counter++ == nextFrameEvery) {
+        state++;
+        if (state >= surfaces.count) {
+          state = 0;
+        }
+        counter = 0;
+      }
+     
+
+      return *(surfaces.root + state);
+    }
+  };
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -72,6 +93,11 @@ class Game {
 
   // Player x
   struct Player {
+    Sprite normalState;
+    Sprite jumpState;
+    Sprite fallState;
+    int state = 0;
+
     bool airBorn = false;
     int jumpCount = 0;
     SDL_Rect box = {
@@ -89,6 +115,10 @@ class Game {
     void Load(int w, int h, int hitBoxOffset) {
       box.w = w - hitBoxOffset;
       box.h = h - hitBoxOffset;
+
+      normalState.nextFrameEvery = 5;
+      fallState.nextFrameEvery = 1;
+      jumpState.nextFrameEvery = 3;
     }
 
     void AddAccelerationX(float f) {
@@ -124,10 +154,12 @@ class Game {
       float tmp = pos.y; // Do not change player pos before colision test
       if (acc.y > 0) {
         // Jump
+        state = 1;
         tmp += JUMP_FORCE * acc.y;
         acc.y -= RESISTANCE;
       } else {
         // Fall
+        state = 2;
         tmp -= GRAVITY_FORCE;
 
         // Not in air anymore
@@ -148,6 +180,7 @@ class Game {
         // Check if can pass by
         if (checkCollision(box, p.box)) {
           // Reenable jump on floor hit
+          state = 0;
           jumpCount = 0;
           
           // Restore player's box position
@@ -203,6 +236,15 @@ class Game {
       pos.y = 0;
       acc.x = 0;
       acc.y = 0;
+    }
+
+    SDL_Surface* GetSurface() { 
+      if (state == 0)
+        return normalState.GetSurface();
+      else if (state == 1)
+        return jumpState.GetSurface();
+      else
+        return fallState.GetSurface();
     }
   } player;
 
@@ -270,12 +312,40 @@ class Game {
     SDL_SetColorKey(charsetSurface, true, 0x000000);
 
     if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
-    if (!LoadOptimizedSurface("juan.bmp", &screenSurface, &juanSurface)) return false;
+
+    SDL_Surface* tmp{};
+    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, &tmp)) return false;
+    player.normalState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, &tmp)) return false;
+    player.normalState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, &tmp)) return false;
+    player.normalState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, &tmp)) return false;
+    player.normalState.surfaces.push_back(tmp);
+
+    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, &tmp)) return false;
+    player.jumpState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, &tmp)) return false;
+    player.jumpState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, &tmp)) return false;
+    player.jumpState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, &tmp)) return false;
+    player.jumpState.surfaces.push_back(tmp);
+
+    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, &tmp)) return false;
+    player.fallState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, &tmp)) return false;
+    player.fallState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, &tmp)) return false;
+    player.fallState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, &tmp)) return false;
+    player.fallState.surfaces.push_back(tmp);
+
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
 
     // Add 15% offset
-    player.Load(juanSurface->w, juanSurface->h, platformSurface->h * 0.15);
-
+    player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
+   
     printf("Successfully loaded media\n");
     return true;
   }
@@ -303,7 +373,18 @@ class Game {
     // Deallocate surface
     FreeSurface(&mapSurface);
     FreeSurface(&charsetSurface);
-    FreeSurface(&juanSurface);
+
+    for (SDL_Surface* s : player.normalState.surfaces) {
+      FreeSurface(&s);
+    }
+
+    for (SDL_Surface* s : player.jumpState.surfaces) {
+      FreeSurface(&s);
+    }
+
+    for (SDL_Surface* s : player.fallState.surfaces) {
+      FreeSurface(&s);
+    }
 
     // Destroy window
     SDL_DestroyWindow(window);
@@ -400,7 +481,7 @@ class Game {
   }
 
   void DrawPlayer() { 
-    BetterDrawSurface(screenSurface, juanSurface, 0 , 300 - player.pos.y);
+    BetterDrawSurface(screenSurface, player.GetSurface(), 0 , 300 - player.pos.y);
     if (DEBUG) {
       DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
     }
