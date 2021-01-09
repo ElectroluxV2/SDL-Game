@@ -1,5 +1,6 @@
 const float RESISTANCE = 0.5;           // 0.128
 const float PLAYER_FORCE = 0.5;         // 0.5
+const float DOLPHIN_FORCE = 2.5;  // 0.5
 const float ACCELERATION_PER_TICK = 1;  // 0.4
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
@@ -8,6 +9,8 @@ const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
 const float MAX_DASH_TIME = 20;
 
 const bool DEBUG = false;
+
+SDL_Rect dolphinBoundaries{100, 100, 200, 200};
 
 class Game {
   const int SCREEN_WIDTH = 640;
@@ -302,8 +305,45 @@ class Game {
   int score = 0;
 
   // Dolphins
-  Sprite dolphin;
+  Sprite dolphinSprite;
   unsigned dolphinCount = 0;
+  struct Dolphin {
+ 
+    struct Coord {
+      float x;
+      float y;
+    } acc, pos;
+
+    void Update() {
+      // Random movement
+      if (rand() & 1) acc.x += ACCELERATION_PER_TICK;
+      else if (rand() & 1) acc.x -= ACCELERATION_PER_TICK;
+      else if (rand() & 1) acc.y += ACCELERATION_PER_TICK;
+      else acc.y -= ACCELERATION_PER_TICK;
+
+      // Acceleration
+      if (acc.x > 0) acc.x -= RESISTANCE;
+      else if (acc.x < 0) acc.x += RESISTANCE;
+      if (abs(acc.x) < RESISTANCE) acc.x = 0;
+
+      if (acc.y > 0) acc.y -= RESISTANCE;
+      else if (acc.y < 0) acc.y += RESISTANCE;
+      if (abs(acc.y) < RESISTANCE) acc.y = 0;
+      
+      printf("%f\n", acc.y);
+
+      // Change pos
+      pos.x += DOLPHIN_FORCE * acc.x;
+      pos.y += DOLPHIN_FORCE * acc.y;
+
+      // Up to boundaries
+      /*if (pos.x < dolphinBoundaries.x)
+        pos.x = 0;
+      if (pos.y < dolphinBoundaries.y || pos.y > dolphinBoundaries.h)
+        pos.y = 0;*/
+    }
+  };
+  Vector<Dolphin> dolphins;
 
   void Physics(int timeUnit) {
     int tmp = -player.pos.y + 300 - SCREEN_HEIGHT + 300;
@@ -437,10 +477,10 @@ class Game {
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
     if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
 
-    if (!LoadOptimizedSurface("d0.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
-    if (!LoadOptimizedSurface("d1.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
-    if (!LoadOptimizedSurface("d2.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
-    if (!LoadOptimizedSurface("d3.bmp", &screenSurface, dolphin.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d0.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d1.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d2.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d3.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
 
     // Add 15% offset
     player.Load(player.normalState.surfaces.Get(0)->w, player.normalState.surfaces.Get(0)->h, platformSurface->h * 0.15);
@@ -499,7 +539,7 @@ class Game {
       FreeSurface(&s);
     }
 
-    for (SDL_Surface *s : dolphin.surfaces) {
+    for (SDL_Surface *s : dolphinSprite.surfaces) {
       FreeSurface(&s);
     }
 
@@ -634,6 +674,32 @@ class Game {
     }
   }
 
+  void DrawDolphins() {
+    for (Dolphin d : dolphins) {
+      printf("X: %f, Y: %f\n", d.pos.x, d.pos.y);
+      BetterDrawSurface(screenSurface, dolphinSprite.GetSurface(), 40, 80);
+      break;
+    }
+  }
+
+  void HandleDolphins() { 
+    // Handle change of dolphins
+    int mDolphinCount = score / 10;
+    if (mDolphinCount > dolphinCount) {
+      // Add new dolphins
+      for (int i = 0; i < mDolphinCount - dolphinCount; i++) {
+        dolphins.push_back({});
+      }
+
+      dolphinCount = mDolphinCount;
+    }
+
+    // Random movement
+    for (Dolphin d : dolphins) {
+      d.Update();
+    }
+  }
+
   void Render() {
     // Clear screen
     SDL_FillRect(screenSurface, NULL, black);
@@ -643,6 +709,8 @@ class Game {
     DrawPlayer();
 
     DrawPlatforms();
+
+    DrawDolphins();
 
     DrawUI();
 
@@ -677,6 +745,9 @@ class Game {
 
       // Handle physics
       Physics(tickTimer.getTicks() * (int)fps);
+
+      // Handle dolphins
+      HandleDolphins();
       tickTimer.start();
 
       // Calculate fps
