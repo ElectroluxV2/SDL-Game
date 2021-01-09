@@ -390,71 +390,34 @@ class Game {
     if (!LoadSurface("cs8x8.bmp", &charsetSurface)) return false;
     SDL_SetColorKey(charsetSurface, true, 0x000000);
 
-    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface))
-      return false;
+    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
 
-    SDL_Surface* tmp{};
-    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface,
-                              &platformSurface))
-      return false;
-    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface,
-                              &platformSurfaceWhenPlayerIsOnIt))
-      return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
 
     // Add 15% offset
-    player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
+    player.Load(player.normalState.surfaces.Get(0)->w, player.normalState.surfaces.Get(0)->h, platformSurface->h * 0.15);
 
     printf("Successfully loaded media\n");
     return true;
