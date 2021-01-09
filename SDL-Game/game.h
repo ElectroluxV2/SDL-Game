@@ -1,6 +1,6 @@
-const float RESISTANCE = 0.5; // 0.128
-const float PLAYER_FORCE = 0.5; // 0.5
-const float ACCELERATION_PER_TICK = 1; // 0.4
+const float RESISTANCE = 0.5;           // 0.128
+const float PLAYER_FORCE = 0.5;         // 0.5
+const float ACCELERATION_PER_TICK = 1;  // 0.4
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
@@ -44,7 +44,7 @@ class Game {
 
   // Platfroms array
   struct Platform {
-    SDL_Rect box = { 0, 0, 0, 0 };
+    SDL_Rect box = {0, 0, 0, 0};
     int onMapPlacementX = 0;
     int state = 0;
   };
@@ -65,8 +65,7 @@ class Game {
     int nextFrameEvery = 10;
     Vector<SDL_Surface*> surfaces;
 
-
-    SDL_Surface* GetSurface() { 
+    SDL_Surface* GetSurface() {
       if (counter++ == nextFrameEvery) {
         state++;
         if (state >= surfaces.count) {
@@ -75,7 +74,7 @@ class Game {
         counter = 0;
       }
 
-      //return *(surfaces.root + state);
+      // return *(surfaces.root + state);
       return surfaces.Get(state);
     }
   };
@@ -109,6 +108,7 @@ class Game {
   unsigned dolphinCount = 0;
 
   int ypad = 0;
+  int tagretypad = 0;
 
   // Player x
   struct Player {
@@ -125,12 +125,7 @@ class Game {
     int dashTimer = 0;
     int cooldownDash = 0;
 
-    SDL_Rect box = {
-      0,
-      0,
-      0,
-      0
-    };
+    SDL_Rect box = {0, 0, 0, 0};
 
     struct Coord {
       float x;
@@ -147,9 +142,7 @@ class Game {
       dashState.nextFrameEvery = 4;
     }
 
-    void AddAccelerationX(float f) {
-      acc.x += f;
-    }
+    void AddAccelerationX(float f) { acc.x += f; }
 
     void SubAccelerationX(float f) {
       if (pos.x <= 0) return;
@@ -177,8 +170,10 @@ class Game {
 
     void Dash() {
       if (dashing) return;
-      if (cooldownDash > 100000) cooldownDash = 0;
-      else return;
+      if (cooldownDash > 100000)
+        cooldownDash = 0;
+      else
+        return;
       dashing = true;
       state = 3;
       acc.x += 50;
@@ -186,15 +181,14 @@ class Game {
     }
 
     void JumpPhysics(Vector<Platform> platforms, int platformCount) {
-      float tmp = pos.y; // Do not change player pos before colision test
-      if (!dashing) {    // if dashing ignore changes on y
+      float tmp = pos.y;  // Do not change player pos before colision test
+      if (!dashing) {     // if dashing ignore changes on y
         if (acc.y > 0) {
           // Jump
           state = 1;
           tmp += JUMP_FORCE * acc.y;
           acc.y -= RESISTANCE;
-        }
-        else {
+        } else {
           // Fall
           state = 2;
           tmp -= GRAVITY_FORCE;
@@ -222,7 +216,7 @@ class Game {
 
           // When player is not on platform
           state = 0;
-          
+
           // Restore player's box position
           box.y = playersRelativeY;
           // Remove any y acceleration on player
@@ -230,11 +224,11 @@ class Game {
 
           // When player is on platform
           p.state = 1;
-     
+
           // Prevent any changes to player's pos
           return;
         } else {
-           p.state = 0;
+          p.state = 0;
         }
       }
 
@@ -243,13 +237,14 @@ class Game {
     }
 
     void MovePhysics(Vector<Platform> platforms, int platformCount) {
-      if (!dashing) { // if dashing ignore changes on x
-        if (acc.x > 0) acc.x -= RESISTANCE;
-        else if (acc.x < 0) acc.x += RESISTANCE;
+      if (!dashing) {  // if dashing ignore changes on x
+        if (acc.x > 0)
+          acc.x -= RESISTANCE;
+        else if (acc.x < 0)
+          acc.x += RESISTANCE;
         if (abs(acc.x) < RESISTANCE) acc.x = 0;
         if (AreSame(acc.x, 0)) return;
       }
-      
 
       // Position player want to go
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
@@ -274,15 +269,18 @@ class Game {
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
 
-    void OnPhysics(Vector<Platform> platforms, int platformCount, int fps_ticks) {
+    void OnPhysics(Vector<Platform> platforms, int platformCount,
+                   int timeUnit) {
       if (dashing) {
-        if (dashTimer >= fps_ticks * MAX_DASH_TIME) {
+        if (dashTimer >= timeUnit * MAX_DASH_TIME) {
           dashTimer = 0;
           dashing = false;
           dashCount++;
           jumpCount--;
-        } else dashTimer += fps_ticks;
-      } else cooldownDash += fps_ticks;
+        } else
+          dashTimer += timeUnit;
+      } else
+        cooldownDash += timeUnit;
       JumpPhysics(platforms, platformCount);
       MovePhysics(platforms, platformCount);
     }
@@ -294,7 +292,7 @@ class Game {
       acc.y = 0;
     }
 
-    SDL_Surface* GetSurface() { 
+    SDL_Surface* GetSurface() {
       if (state == 0)
         return normalState.GetSurface();
       else if (state == 1)
@@ -306,40 +304,39 @@ class Game {
     }
   } player;
 
-  void Physics(int fps_ticks) {
+  void Physics(int timeUnit) {
+    int tmp = -player.pos.y + 300 - SCREEN_HEIGHT + 300;
 
-    ypad = -player.pos.y + 300 - SCREEN_HEIGHT + 300;
+    if (player.box.y - ypad > 350) tagretypad = tmp;
+    if (player.box.y - ypad < 50) tagretypad = tmp;
 
-    printf("Ypad: %i\n", ypad);
+    // printf("target: %i, now: %i\n", tagretypad, ypad);
+
+    if (tagretypad > ypad)
+      ypad += 0.1 * abs(ypad - tagretypad);
+    else if (tagretypad < ypad)
+      ypad -= 0.1 * abs(ypad - tagretypad);
+    else
+      ypad = tagretypad;
+
+    if (abs(ypad - tagretypad) < 0.1 * abs(ypad - tagretypad))
+      ypad = tagretypad;
+
+    // printf("Ypad: %i\n", ypad);
 
     // Follow player movement
     for (Platform& p : platforms) {
       int destX = p.onMapPlacementX - player.pos.x;
       p.box.x = destX;
-      // p.box.y += ypad;
     }
 
     // Folow on y axyis
     player.box.y = -player.pos.y + 300;
-    // player.box.y += ypad;
 
-    /*if (player.box.y > SCREEN_HEIGHT) {
-      //printf("W DOL\n");
-      ypad++;
-    } else if (player.box.y < 20) {
-      //printf("W GORE\n");
-      ypad--;
-    } else {
-      ypad = 0;
-    }*/
-      
-      
-
-    player.OnPhysics(platforms, 10, fps_ticks);
+    player.OnPhysics(platforms, 10, timeUnit);
   }
 
   bool Load() {
-
     // Initialize SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
       printf("SDL_Init error: %s\n", SDL_GetError());
@@ -347,13 +344,16 @@ class Game {
     }
 
     // Create window
-    window = SDL_CreateWindow("Robot unicorn atack", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Robot unicorn atack", SDL_WINDOWPOS_UNDEFINED,
+                              SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
+                              SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (window == NULL) {
       printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
       return false;
     }
 
-    //renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    // renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED |
+    // SDL_RENDERER_PRESENTVSYNC);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
       printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
@@ -366,10 +366,14 @@ class Game {
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
     // Get window surface
-    screenSurface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+    screenSurface =
+        SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00FF0000,
+                             0x0000FF00, 0x000000FF, 0xFF000000);
 
     // Get screen texture
-    screenTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+    screenTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+                                      SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH,
+                                      SCREEN_HEIGHT);
 
     // Init colors
     black = SDL_MapRGB(screenSurface->format, 0x00, 0x00, 0x00);
@@ -388,51 +392,72 @@ class Game {
     if (!LoadSurface("cs8x8.bmp", &charsetSurface)) return false;
     SDL_SetColorKey(charsetSurface, true, 0x000000);
 
-    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
+    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface))
+      return false;
 
     SDL_Surface* tmp{};
-    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, &tmp))
+      return false;
     player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, &tmp))
+      return false;
     player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, &tmp))
+      return false;
     player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, &tmp))
+      return false;
     player.normalState.surfaces.push_back(tmp);
 
-    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, &tmp))
+      return false;
     player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, &tmp))
+      return false;
     player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, &tmp))
+      return false;
     player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, &tmp))
+      return false;
     player.jumpState.surfaces.push_back(tmp);
 
-    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, &tmp))
+      return false;
     player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, &tmp))
+      return false;
     player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, &tmp))
+      return false;
     player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, &tmp))
+      return false;
     player.fallState.surfaces.push_back(tmp);
 
-    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, &tmp))
+      return false;
     player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, &tmp))
+      return false;
     player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, &tmp))
+      return false;
     player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, &tmp))
+      return false;
     player.dashState.surfaces.push_back(tmp);
 
-    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
-    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface,
+                              &platformSurface))
+      return false;
+    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface,
+                              &platformSurfaceWhenPlayerIsOnIt))
+      return false;
 
     // Add 15% offset
     player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
-   
+
     printf("Successfully loaded media\n");
     return true;
   }
@@ -443,14 +468,13 @@ class Game {
   }
 
   void SetObstacle(int x, int y) {
-    Platform obstacle = { {x, y, obstacleSurface->w, obstacleSurface->h}, x };
+    Platform obstacle = {{x, y, obstacleSurface->w, obstacleSurface->h}, x};
   }
 
-  void LoadLevel()  {
+  void LoadLevel() {
     player.pos.y = 150;
 
-
-    //SetPlatform(0, 1000);
+    // SetPlatform(0, 1000);
 
     /*SetPlatform(0, 390);
     SetPlatform(400, 350);
@@ -468,7 +492,6 @@ class Game {
         SetPlatform(50 * j + platformSurface->w * i, 400 - (25 * j) + 1000);
       }
     }
-
   }
 
   void Close() {
@@ -502,7 +525,7 @@ class Game {
 
   void HandleEvents(int ticks) {
     // keyboard mocarz obluhuje
-    const Uint8 *key = SDL_GetKeyboardState(NULL);
+    const Uint8* key = SDL_GetKeyboardState(NULL);
     if (key[SDL_SCANCODE_D]) {
       b1 = true;
     } else if (b1) {
@@ -518,8 +541,9 @@ class Game {
     if (key[SDL_SCANCODE_Z]) {
       ticksTimePressed += ticks;
       if (!preventToLongJump) player.Jump();
-   
-      if (ticksTimePressed >= MAX_JUMP_TIME * fps * ticks && !preventToLongJump) {  // seconds in fps
+
+      if (ticksTimePressed >= MAX_JUMP_TIME * fps * ticks &&
+          !preventToLongJump) {  // seconds in fps
         preventToLongJump = true;
       }
     } else {
@@ -527,7 +551,7 @@ class Game {
       if (ticksTimePressed > ticks) {
         ticksTimePressed = 0;
         player.IncrementJump();
-      };    
+      };
     }
     if (key[SDL_SCANCODE_X]) {
       player.Dash();
@@ -554,55 +578,66 @@ class Game {
     DrawRectangle(screenSurface, 4, 4, SCREEN_WIDTH - 8, 36, green, black);
 
     char text[128];
-    sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime)/1000.0);
-    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
+    sprintf(text, "FPS: %.0f Time: %.0f sec", fps,
+            (SDL_GetTicks() - startTime) / 1000.0);
+    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10,
+               text, charsetSurface);
 
-    /*sprintf(text, "accelerationX: %.0f, posX: %.0f, ", player.acc.x, player.pos.x);
-    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);
-    sprintf(text, "FPS: %.0f Time: %.0f sec", fps, (SDL_GetTicks() - startTime) / 1000.0);
-    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
+    /*sprintf(text, "accelerationX: %.0f, posX: %.0f, ", player.acc.x,
+    player.pos.x); DrawString(screenSurface, screenSurface->w / 2 - strlen(text)
+    * 8 / 2, 26, text, charsetSurface); sprintf(text, "FPS: %.0f Time: %.0f
+    sec", fps, (SDL_GetTicks() - startTime) / 1000.0); DrawString(screenSurface,
+    screenSurface->w / 2 - strlen(text) * 8 / 2, 10, text, charsetSurface);
 
-    sprintf(text, "accelerationY: %.0f, posY: %.0f,", player.acc.y, player.GetPos().y);
-    sprintf(text, "accelerationY: %f,   posY: %f", player.acc.y, player.GetPos().y);
-    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26, text, charsetSurface);*/
+    sprintf(text, "accelerationY: %.0f, posY: %.0f,", player.acc.y,
+    player.GetPos().y); sprintf(text, "accelerationY: %f,   posY: %f",
+    player.acc.y, player.GetPos().y);
+    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26,
+    text, charsetSurface);*/
   }
 
   void DrawBackground() {
-
-   int x = -((int)player.pos.x % mapSurface->w);
+    int x = -((int)player.pos.x % mapSurface->w);
 
     if (-x == mapSurface->w) {
       x = 0;
     }
 
-    //printf("x: %d\ty: %d\n", x, 0);
+    // printf("x: %d\ty: %d\n", x, 0);
 
     BetterDrawSurface(screenSurface, mapSurface, x, 46);
     BetterDrawSurface(screenSurface, mapSurface, x + mapSurface->w, 46);
   }
 
-  void DrawPlatforms() {   
+  void DrawPlatforms() {
     for (Platform p : platforms) {
       // Box has relative to screen values
-      BetterDrawSurface(screenSurface, p.state == 0 ? platformSurface : platformSurfaceWhenPlayerIsOnIt, p.box.x, p.box.y - ypad);
+      BetterDrawSurface(
+          screenSurface,
+          p.state == 0 ? platformSurface : platformSurfaceWhenPlayerIsOnIt,
+          p.box.x, p.box.y - ypad);
 
       // Display hit boxes for debug purposes
       if (DEBUG) {
-        if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y < 0 || p.box.y + p.box.h > SCREEN_HEIGHT) continue;
-        DrawRectangle(screenSurface, p.box.x, p.box.y, p.box.w, p.box.h, red, red);
+        if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y < 0 ||
+            p.box.y + p.box.h > SCREEN_HEIGHT)
+          continue;
+        DrawRectangle(screenSurface, p.box.x, p.box.y, p.box.w, p.box.h, red,
+                      red);
       }
     }
   }
 
-  void DrawPlayer() { 
-    BetterDrawSurface(screenSurface, player.GetSurface(), 0 , 300 - player.pos.y - ypad);
+  void DrawPlayer() {
+    BetterDrawSurface(screenSurface, player.GetSurface(), 0,
+                      300 - player.pos.y - ypad + 20);
     if (DEBUG) {
-      DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w, player.box.h, green, black);
+      DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w,
+                    player.box.h, green, black);
     }
   }
 
   void Render() {
-
     // Clear screen
     SDL_FillRect(screenSurface, NULL, black);
 
@@ -614,7 +649,8 @@ class Game {
 
     DrawUI();
 
-    SDL_UpdateTexture(screenTexture, NULL, screenSurface->pixels, screenSurface->pitch);
+    SDL_UpdateTexture(screenTexture, NULL, screenSurface->pixels,
+                      screenSurface->pitch);
     //		SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, screenTexture, NULL, NULL);
     SDL_RenderPresent(renderer);
@@ -647,7 +683,7 @@ class Game {
       tickTimer.start();
 
       // Calculate fps
-      fps = countedFrames / (fpsTimer.getTicks() / (float) 1000);
+      fps = countedFrames / (fpsTimer.getTicks() / (float)1000);
       if (fps > 2000000) {
         fps = 0;
       }
@@ -665,7 +701,7 @@ class Game {
   }
 
  public:
-  void Start() { 
+  void Start() {
     if (!Load()) return;
     if (!LoadMedia()) return;
     LoadLevel();
