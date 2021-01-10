@@ -37,31 +37,14 @@ class Game {
 
   // Contains all possible characters
   SDL_Surface* charsetSurface = NULL;
-
-  // Platforms
-  SDL_Surface* platformSurface = NULL;
-  SDL_Surface* platformSurfaceWhenPlayerIsOnIt = NULL;
-
-  // Platfroms array
-  struct Platform {
-    SDL_Rect box = {0, 0, 0, 0};
-    int onMapPlacementX = 0;
-    int state = 0;
-  };
-  Vector<Platform> platforms;
-
-  // Obstacles
-  SDL_Surface* obstacleSurface = NULL;
-
-  // Obstacles array
-  Vector<Platform> obstacles;
-
+   
+  // Conatainer for sprites (animations) 
   struct Sprite {
-   private:
+  private:
     int state = 0;
     int counter = 0;
 
-   public:
+  public:
     int nextFrameEvery = 10;
     Vector<SDL_Surface*> surfaces;
 
@@ -76,6 +59,24 @@ class Game {
       return surfaces.Get(state);
     }
   };
+
+  // Platforms
+  SDL_Surface* platformSurface = NULL;
+  SDL_Surface* platformSurfaceWhenPlayerIsOnIt = NULL;
+
+  // Platfroms array
+  struct Platform {
+    SDL_Rect box = {0, 0, 0, 0};
+    int onMapPlacementX = 0;
+    int state = 0;
+  };
+  Vector<Platform> platforms;
+
+  // Obstacles
+  Sprite angryCat;
+
+  // Obstacles array
+  Vector<Platform> obstacles;
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -140,6 +141,10 @@ class Game {
       dashState.nextFrameEvery = 4;
     }
 
+    void Die() {
+      Reset();
+    }
+
     void AddAccelerationX(float f) { acc.x += f; }
 
     void SubAccelerationX(float f) {
@@ -178,7 +183,7 @@ class Game {
       dashTimer = 0;
     }
 
-    void JumpPhysics(Vector<Platform> platforms, int platformCount) {
+    void JumpPhysics(Vector<Platform> platforms) {
       float tmp = pos.y;  // Do not change player pos before colision test
       if (!dashing) {     // if dashing ignore changes on y
         if (acc.y > 0) {
@@ -234,7 +239,7 @@ class Game {
       pos.y = tmp;
     }
 
-    void MovePhysics(Vector<Platform> platforms, int platformCount) {
+    void MovePhysics(Vector<Platform> platforms) {
       if (!dashing) {  // if dashing ignore changes on x
         if (acc.x > 0)
           acc.x -= RESISTANCE;
@@ -257,6 +262,7 @@ class Game {
           p.box.x = platformRelatvieX;
           // Remove any x acceleration on player
           acc.x = 0;
+          Die();
           return;
         }
       }
@@ -267,8 +273,25 @@ class Game {
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
 
-    void OnPhysics(Vector<Platform> platforms, int platformCount,
-                   int timeUnit) {
+    void DashPhysics(Vector<Platform> obstacles) {
+      float tmp = pos.x + (acc.x * PLAYER_FORCE);
+
+      for (Platform o : obstacles) {
+        // Relative postion of box
+        int platformRelatvieX = o.box.x;
+        o.box.x = o.onMapPlacementX - tmp;
+        // Check if can pass by
+        if (checkCollision(o.box, box) && !dashing) {
+          o.box.x = platformRelatvieX;
+          Die();
+        } else if (checkCollision(o.box, box) && dashing) {
+
+        }
+      }
+
+    }
+
+    void OnPhysics(Vector<Platform> platforms, Vector<Platform> obstacles, int timeUnit) {
       if (dashing) {
         if (dashTimer >= timeUnit * MAX_DASH_TIME) {
           dashTimer = 0;
@@ -279,8 +302,9 @@ class Game {
           dashTimer += timeUnit;
       } else
         cooldownDash += timeUnit;
-      JumpPhysics(platforms, platformCount);
-      MovePhysics(platforms, platformCount);
+      DashPhysics(obstacles);
+      JumpPhysics(platforms);
+      MovePhysics(platforms);
     }
 
     void Reset() {
@@ -320,18 +344,20 @@ class Game {
     if (abs(ypad - tagretypad) < 0.1 * abs(ypad - tagretypad))
       ypad = tagretypad;
 
-    // printf("Ypad: %i\n", ypad);
-
     // Follow player movement
     for (Platform& p : platforms) {
       int destX = p.onMapPlacementX - player.pos.x;
       p.box.x = destX;
     }
+    for (Platform& o : obstacles) {
+      int destX = o.onMapPlacementX - player.pos.x;
+      o.box.x = destX;
+    }
 
     // Folow on y axyis
     player.box.y = -player.pos.y + 300;
 
-    player.OnPhysics(platforms, 10, timeUnit);
+    player.OnPhysics(platforms, obstacles, timeUnit);
   }
 
   bool Load() {
@@ -453,7 +479,12 @@ class Game {
                               &platformSurfaceWhenPlayerIsOnIt))
       return false;
 
-    if (!LoadOptimizedSurface("angry_cat_0.bmp", &screenSurface, &tmp)) return false;
+    if (!LoadOptimizedSurface("angry_cat_0.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("angry_cat_1.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("angry_cat_2.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("angry_cat_3.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("angry_cat_4.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("angry_cat_5.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
 
     // Add 15% offset
     player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
@@ -467,8 +498,16 @@ class Game {
     platforms.push_back(p);
   }
 
+  void LongBoi(int howManyShortBoys, int x, int y) {
+    for (int i = 0; i < howManyShortBoys; i++) {
+      SetPlatform(x, y);
+      x += platformSurface->w;
+    }
+  }
+
   void SetObstacle(int x, int y) {
-    Platform obstacle = {{x, y, obstacleSurface->w, obstacleSurface->h}, x};
+    Platform o = {{x, y, angryCat.surfaces[0]->w, angryCat.surfaces[0]->h}, x};
+    obstacles.push_back(o);
   }
 
   void LoadLevel() {
@@ -486,12 +525,15 @@ class Game {
     SetPlatform(2600, 350);
     SetPlatform(3000, 400);
     SetPlatform(3400, 300);*/
-    for (int i = 0; i < 100; i++) {
+    /*for (int i = 0; i < 100; i++) {
       for (int j = 0; j < 100; j++) {
         // printf("Y: %i\n", 400 - (25 * j));
         SetPlatform(50 * j + platformSurface->w * i, 400 - (25 * j) + 1000);
       }
-    }
+    }*/
+    LongBoi(100, 0, 380);
+    SetPlatform(200, 380 - platformSurface->h);
+    SetObstacle(500, 380 - angryCat.surfaces[0]->h);
   }
 
   void Close() {
@@ -509,6 +551,10 @@ class Game {
     }
 
     for (SDL_Surface* s : player.fallState.surfaces) {
+      FreeSurface(&s);
+    }
+
+    for (SDL_Surface* s : angryCat.surfaces) {
       FreeSurface(&s);
     }
 
@@ -628,6 +674,20 @@ class Game {
     }
   }
 
+  void DrawObstacle() {
+    for (Platform o : obstacles) {
+      BetterDrawSurface(screenSurface, angryCat.GetSurface(), o.box.x, o.box.y - ypad);
+
+      if (DEBUG) {
+        if (o.box.x < 0 || o.box.x + o.box.w > SCREEN_WIDTH || o.box.y < 0 ||
+          o.box.y + o.box.h > SCREEN_HEIGHT)
+          continue;
+        DrawRectangle(screenSurface, o.box.x, o.box.y, o.box.w, o.box.h, red,
+          red);
+      }
+    }
+  }
+
   void DrawPlayer() {
     BetterDrawSurface(screenSurface, player.GetSurface(), 0,
                       300 - player.pos.y - ypad + 20);
@@ -646,6 +706,8 @@ class Game {
     DrawPlayer();
 
     DrawPlatforms();
+
+    DrawObstacle();
 
     DrawUI();
 
