@@ -35,7 +35,6 @@ class Game {
 
   // Dash logic
   int ticksPassed = 0;
-  bool pressedOnce = false;
 
   // The window we'll be rendering to
   SDL_Window* window = NULL;
@@ -646,6 +645,7 @@ class Game {
     platforms.push_back(p);
   }
 
+  // function to create set of platforms with equal y
   void LongBoi(int howManyShortBoys, int x, int y) {
     for (int i = 0; i < howManyShortBoys; i++) {
       SetPlatform(x, y);
