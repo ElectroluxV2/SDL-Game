@@ -1,7 +1,7 @@
 # this is comment
 # platforms
 
-platforms:
+shortplatforms:
   - 400
     100
 
@@ -9,6 +9,11 @@ platforms:
     100
 
   - 1000
+    100
+
+longplatforms:
+  - 0
+    380
     100
 
 obstacles:

@@ -457,43 +457,56 @@ class Game {
     if (!config) printf("Config file not found!\n");
 
     char buffer[BUFFER_SIZE];
-    bool platforms = false, obstacles = false, xLoaded = false, yLoaded = false;
-    int x = 0, y = 0;
+    bool xLoaded = false, yLoaded = false, qLoaded = false;
+    int action = 0, x = 0, y = 0, quantity = 0;
     while (fgets(buffer, BUFFER_SIZE, config)) {
       switch (buffer[0]) {
       case '#':
         continue;
         break;
 
-      case 'p':
-        platforms = true;
-        obstacles = false;
+      case 's':
+        action = 1;
+        break;
+
+      case 'l':
+        action = 2;
         break;
 
       case 'o':
-        obstacles = true;
-        platforms = false;
+        action = 3;
         break;
       case '\n':
         xLoaded = false;
         yLoaded = false;
+        qLoaded = false;
         break;
       }
       if (buffer[2] == '-') {
         x = atoi(buffer + 3);
         xLoaded = true;
-      } else if (xLoaded) {
+      } else if (xLoaded && !yLoaded) {
         y = atoi(buffer + 3);
+        yLoaded = true;
         // printf("x: %d, y: %d\n", x, y);
-        if (platforms) {
-          // printf("Platform placed!\n");
+      } else if (action == 2 && yLoaded) {
+        quantity = atoi(buffer + 3);
+        qLoaded = true;
+        printf("Long platform placed!\n");
+        LongBoi(quantity, x, y);
+      }
+
+      if (xLoaded && yLoaded && !qLoaded) {
+        if (action == 1) {
+          printf("Platform placed!\n");
           SetPlatform(x, y);
         }
-        if (obstacles) {
-          // printf("Obstacle placed!\n");
+
+        if (action == 3) {
+          printf("Obstacle placed!\n");
           SetObstacle(x, y);
         }
-      } 
+      }
     }
     fclose(config);
   }
