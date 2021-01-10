@@ -8,6 +8,7 @@ const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
 const float MAX_DASH_TIME = 20;
+const int DOLPHIN_SPEED = 3;
 
 const bool DEBUG = false;
 
@@ -325,10 +326,10 @@ class Game {
         moveTimer = 0;
 
         // Random movement
-        acc.x += ACCELERATION_PER_TICK * (float((rand() % 2)));
-        acc.x -= ACCELERATION_PER_TICK * (float((rand() % 2)));
-        acc.y += ACCELERATION_PER_TICK * (float((rand() % 2)));
-        acc.y -= ACCELERATION_PER_TICK * (float((rand() % 2)));
+        acc.x += ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
+        acc.x -= ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
+        acc.y += ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
+        acc.y -= ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
 
         // printf("x: %f, y: %f\n", acc.x, acc.y);
       }
@@ -352,8 +353,8 @@ class Game {
         acc.x = -acc.x;
       }
 
-      if (pos.x > dolphinBoundaries.maxX) {
-        pos.x = dolphinBoundaries.maxX;
+      if (pos.x + sprite.surfaces.Get(0)->w > dolphinBoundaries.maxX) {
+        pos.x = dolphinBoundaries.maxX - sprite.surfaces.Get(0)->w;
         acc.x = -acc.x;
       }
 
@@ -362,8 +363,8 @@ class Game {
         acc.y = -acc.y;
       }
 
-      if (pos.y > dolphinBoundaries.maxY) {
-        pos.y = dolphinBoundaries.maxY;
+      if (pos.y + sprite.surfaces.Get(0)->h > dolphinBoundaries.maxY) {
+        pos.y = dolphinBoundaries.maxY - sprite.surfaces.Get(0)->h;
         acc.y = -acc.y;
       }
     }
