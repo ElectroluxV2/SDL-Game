@@ -206,8 +206,8 @@ class Game {
     struct Coord {
       float x;
       float y;
-    } acc, pos;
-
+    } acc, pos{0, -20};
+    
     void Load(int w, int h, int hitBoxOffset) {
       box.w = w - hitBoxOffset;
       box.h = h - hitBoxOffset;
@@ -224,7 +224,7 @@ class Game {
     }
 
     void AddAccelerationX(float f) {
-      if (acc.x >= 400) return;
+      if (acc.x >= 100) return;
       acc.x += f; 
     }
 
@@ -243,7 +243,7 @@ class Game {
       if (airBorn) return false;
 
       // Can't jump more than 2 times in row
-      if (jumpCount >= 2) {
+      if (jumpCount >= 2 && !DEBUG) {
         return false;
       }
 
@@ -254,10 +254,8 @@ class Game {
 
     void Dash() {
       if (dashing) return;
-      if (cooldownDash > 100000)
-        cooldownDash = 0;
-      else
-        return;
+      if (cooldownDash > 100000) cooldownDash = 0;
+      else return;
       dashing = true;
       state = 3;
       acc.x += 50;
@@ -374,6 +372,7 @@ class Game {
         if (dashTimer >= timeUnit * MAX_DASH_TIME) {
           dashTimer = 0;
           dashing = false;
+          acc.x -= 50;
           dashCount++;
           jumpCount--;
         } else dashTimer += timeUnit;
@@ -385,7 +384,7 @@ class Game {
 
     void Reset() {
       pos.x = 0;
-      pos.y = 0;
+      pos.y = -20;
       acc.x = 0;
       acc.y = 0;
     }
@@ -446,6 +445,10 @@ class Game {
     if (player.pos.x > calc) {
       stage++;
       ReadConfig("config.yml", width * stage);
+    }
+
+    if (player.pos.y < -400) {
+      player.Reset();
     }
 
     // Calc score
@@ -722,6 +725,7 @@ class Game {
   }
 
   bool pressedOnce = false;
+  int timeToAccelerateAutoMode = 0;
   void HandleEvents(int ticks) {
     // keyboard event handle
     const Uint8* key = SDL_GetKeyboardState(NULL);
@@ -732,7 +736,15 @@ class Game {
       pressedOnce = false;
     }
     if (key[SDL_SCANCODE_RIGHT] || mode) {
-      player.AddAccelerationX(ACCELERATION_PER_TICK);
+      if (mode) {
+        timeToAccelerateAutoMode += ticks;
+        if (timeToAccelerateAutoMode > 15) {
+          player.AddAccelerationX(ACCELERATION_PER_TICK);
+          timeToAccelerateAutoMode = 0;
+        }
+      } else {
+        player.AddAccelerationX(ACCELERATION_PER_TICK);
+      }
     }
     if (key[SDL_SCANCODE_LEFT]) {
       player.SubAccelerationX(ACCELERATION_PER_TICK);
@@ -873,6 +885,8 @@ class Game {
       }
 
       dolphinCount = mDolphinCount;
+    } else if (mDolphinCount < dolphinCount) {
+      dolphins.Erase();
     }
 
     // Random movement
