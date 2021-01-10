@@ -1,21 +1,29 @@
-const float RESISTANCE = 0.5;           // 0.128
-const float PLAYER_FORCE = 0.5;         // 0.5
-const float ACCELERATION_PER_TICK = 1;  // 0.4
+const float RESISTANCE = 0.5;
+const float DOLPHIN_RESISTANCE = 0.01;
+const float PLAYER_FORCE = 0.5;
+const float DOLPHIN_FORCE = 0.05;
+const float ACCELERATION_PER_TICK = 1;
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
 const float MAX_JUMP_TIME = 0.2;  // Factor of 1 (fps based) second
 const float MAX_DASH_TIME = 20;
+const int DOLPHIN_SPEED = 3;
 
 const bool DEBUG = false;
 
-class Game {
-  const int SCREEN_WIDTH = 640;
-  const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 480;
 
+struct Boundaries {
+  int minX, maxX, minY, maxY;
+};
+Boundaries dolphinBoundaries {0, SCREEN_WIDTH, SCREEN_HEIGHT - 100, SCREEN_HEIGHT};
+
+class Game {
+  
   const int SCREEN_FPS = 60;
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
-
   bool collisionDetected = false;
 
   // Jump logic
@@ -102,12 +110,9 @@ class Game {
   // false -> steering with arrows, true -> automatic movment
   bool mode = false;
 
-  // Dolphins
-  Sprite dolphin;
-  unsigned dolphinCount = 0;
-
+  // Camera follow player on Y axis
   int ypad = 0;
-  int tagretypad = 0;
+  int tagretypad = 0; // But smooth
 
   // Player x
   struct Player {
@@ -182,8 +187,8 @@ class Game {
       acc.x += 50;
       dashTimer = 0;
     }
-
-    void JumpPhysics(Vector<Platform> platforms) {
+    
+    void JumpPhysics(Vector<Platform*> platforms) {
       float tmp = pos.y;  // Do not change player pos before colision test
       if (!dashing) {     // if dashing ignore changes on y
         if (acc.y > 0) {
@@ -211,9 +216,9 @@ class Game {
 
       // Check colision
       // Every platformG
-      for (Platform& p : platforms) {
+      for (Platform* p : platforms) {
         // Check if can pass by
-        if (checkCollision(box, p.box)) {
+        if (checkCollision(box, p->box)) {
           // Reenable jump on floor hit
           jumpCount = 0;
 
@@ -226,12 +231,12 @@ class Game {
           acc.y = 0;
 
           // When player is on platform
-          p.state = 1;
+          p->state = 1;
 
           // Prevent any changes to player's pos
           return;
         } else {
-          p.state = 0;
+          p->state = 0;
         }
       }
 
@@ -239,7 +244,7 @@ class Game {
       pos.y = tmp;
     }
 
-    void MovePhysics(Vector<Platform> platforms) {
+    void MovePhysics(Vector<Platform*> platforms) {
       if (!dashing) {  // if dashing ignore changes on x
         if (acc.x > 0)
           acc.x -= RESISTANCE;
@@ -252,14 +257,14 @@ class Game {
       // Position player want to go
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
       // Every platform
-      for (Platform p : platforms) {
+      for (Platform* p : platforms) {
         // Relative postion of box
-        int platformRelatvieX = p.box.x;
-        p.box.x = p.onMapPlacementX - tmp;
+        int platformRelatvieX = p->box.x;
+        p->box.x = p->onMapPlacementX - tmp;
         // Check if can pass by
-        if (checkCollision(p.box, box)) {
+        if (checkCollision(p->box, box)) {
           // Restore box position
-          p.box.x = platformRelatvieX;
+          p->box.x = platformRelatvieX;
           // Remove any x acceleration on player
           acc.x = 0;
           Die();
@@ -272,7 +277,7 @@ class Game {
       if (pos.x < 0) pos.x = 0;
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
-
+    
     void DashPhysics(Vector<Platform> obstacles) {
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
 
@@ -291,7 +296,7 @@ class Game {
 
     }
 
-    void OnPhysics(Vector<Platform> platforms, Vector<Platform> obstacles, int timeUnit) {
+    void OnPhysics(Vector<Platform*> platforms, Vector<Platform> obstacles, int timeUnit) {
       if (dashing) {
         if (dashTimer >= timeUnit * MAX_DASH_TIME) {
           dashTimer = 0;
@@ -326,6 +331,72 @@ class Game {
     }
   } player;
 
+  // Score is needed to calc ammount of Dolphins
+  int score = 0;
+
+  // Dolphins
+  Sprite dolphinSprite;
+  unsigned dolphinCount = 0;
+  struct Dolphin {
+    Sprite sprite; // Contains only own timer and pointers to surfaces
+    int moveTimer = 0;
+    struct Coord {
+      float x;
+      float y;
+    } acc, pos;
+
+    void Update(int timeUnit) {
+      // Do not add acceleration every frame
+      moveTimer += timeUnit;
+      if (moveTimer >= 5000) {
+        moveTimer = 0;
+
+        // Random movement
+        acc.x += ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
+        acc.x -= ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
+        acc.y += ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
+        acc.y -= ACCELERATION_PER_TICK * (float((rand() % DOLPHIN_SPEED)));
+
+        // printf("x: %f, y: %f\n", acc.x, acc.y);
+      }
+      
+      // Acceleration
+      if (acc.x > 0) acc.x -= DOLPHIN_RESISTANCE;
+      else if (acc.x < 0) acc.x += DOLPHIN_RESISTANCE;
+      if (abs(acc.x) < DOLPHIN_RESISTANCE) acc.x = 0;
+
+      if (acc.y > 0) acc.y -= DOLPHIN_RESISTANCE;
+      else if (acc.y < 0) acc.y += DOLPHIN_RESISTANCE;
+      if (abs(acc.y) < DOLPHIN_RESISTANCE) acc.y = 0;
+
+      // Change pos
+      pos.x += DOLPHIN_FORCE * acc.x;
+      pos.y += DOLPHIN_FORCE * acc.y;
+
+      // Up to boundaries
+      if (pos.x < dolphinBoundaries.minX) {
+        pos.x = dolphinBoundaries.minX;
+        acc.x = -acc.x;
+      }
+
+      if (pos.x + sprite.surfaces.Get(0)->w > dolphinBoundaries.maxX) {
+        pos.x = dolphinBoundaries.maxX - sprite.surfaces.Get(0)->w;
+        acc.x = -acc.x;
+      }
+
+      if (pos.y < dolphinBoundaries.minY) {
+        pos.y = dolphinBoundaries.minY;
+        acc.y = -acc.y;
+      }
+
+      if (pos.y + sprite.surfaces.Get(0)->h > dolphinBoundaries.maxY) {
+        pos.y = dolphinBoundaries.maxY - sprite.surfaces.Get(0)->h;
+        acc.y = -acc.y;
+      }
+    }
+  };
+  Vector<Dolphin> dolphins;
+
   void Physics(int timeUnit) {
     int tmp = -player.pos.y + 300 - SCREEN_HEIGHT + 300;
 
@@ -344,20 +415,41 @@ class Game {
     if (abs(ypad - tagretypad) < 0.1 * abs(ypad - tagretypad))
       ypad = tagretypad;
 
+
+    Vector<Platform*> toCheck;
     // Follow player movement
     for (Platform& p : platforms) {
       int destX = p.onMapPlacementX - player.pos.x;
       p.box.x = destX;
+
+      if (p.box.x + p.box.w < 0) continue;
+      if (p.box.x - p.box.w > SCREEN_WIDTH) continue;
+
+      if (p.box.y - ypad < 0) continue;
+      if (p.box.y - ypad > SCREEN_HEIGHT) continue;
+
+      toCheck.push_back(&p);
     }
     for (Platform& o : obstacles) {
       int destX = o.onMapPlacementX - player.pos.x;
       o.box.x = destX;
     }
 
+    // printf("%i\n", toCheck.count);
+
     // Folow on y axyis
     player.box.y = -player.pos.y + 300;
+    player.OnPhysics(toCheck, timeUnit);
+
+    // Calc score
+    int aScore = (int)player.pos.x / 100;
+    if (aScore > score)
+      score = aScore;
+
 
     player.OnPhysics(platforms, obstacles, timeUnit);
+    // Dolphin count is depended on score
+    int dolphinScore = 0;
   }
 
   bool Load() {
@@ -416,68 +508,36 @@ class Game {
     if (!LoadSurface("cs8x8.bmp", &charsetSurface)) return false;
     SDL_SetColorKey(charsetSurface, true, 0x000000);
 
-    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface))
-      return false;
+    if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
 
-    SDL_Surface* tmp{};
-    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.normalState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_normal_3.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.jumpState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_jump_0.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_1.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_2.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_jump_3.bmp", &screenSurface, player.jumpState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.fallState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_fall_0.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_1.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_2.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_fall_3.bmp", &screenSurface, player.fallState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
-    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, &tmp))
-      return false;
-    player.dashState.surfaces.push_back(tmp);
+    if (!LoadOptimizedSurface("juan_dash_0.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_1.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
 
-    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface,
-                              &platformSurface))
-      return false;
-    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface,
-                              &platformSurfaceWhenPlayerIsOnIt))
-      return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
+    if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
+
+    if (!LoadOptimizedSurface("d0.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d1.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d2.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
+    if (!LoadOptimizedSurface("d3.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
 
     if (!LoadOptimizedSurface("angry_cat_0.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("angry_cat_1.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
@@ -487,7 +547,7 @@ class Game {
     if (!LoadOptimizedSurface("angry_cat_5.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
 
     // Add 15% offset
-    player.Load(tmp->w, tmp->h, platformSurface->h * 0.15);
+    player.Load(player.normalState.surfaces.Get(0)->w, player.normalState.surfaces.Get(0)->h, platformSurface->h * 0.15);
 
     printf("Successfully loaded media\n");
     return true;
@@ -555,6 +615,9 @@ class Game {
     }
 
     for (SDL_Surface* s : angryCat.surfaces) {
+      FreeSurface(&s);
+    }
+    for (SDL_Surface *s : dolphinSprite.surfaces) {
       FreeSurface(&s);
     }
 
@@ -629,6 +692,10 @@ class Game {
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10,
                text, charsetSurface);
 
+    sprintf(text, "score: %i, ", score);
+    DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26,
+               text, charsetSurface);
+
     /*sprintf(text, "accelerationX: %.0f, posX: %.0f, ", player.acc.x,
     player.pos.x); DrawString(screenSurface, screenSurface->w / 2 - strlen(text)
     * 8 / 2, 26, text, charsetSurface); sprintf(text, "FPS: %.0f Time: %.0f
@@ -665,10 +732,9 @@ class Game {
 
       // Display hit boxes for debug purposes
       if (DEBUG) {
-        if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y < 0 ||
-            p.box.y + p.box.h > SCREEN_HEIGHT)
+        if (p.box.x < 0 || p.box.x + p.box.w > SCREEN_WIDTH || p.box.y - ypad < 0 || p.box.y - ypad + p.box.h > SCREEN_HEIGHT)
           continue;
-        DrawRectangle(screenSurface, p.box.x, p.box.y, p.box.w, p.box.h, red,
+        DrawRectangle(screenSurface, p.box.x, p.box.y - ypad, p.box.w, p.box.h, red,
                       red);
       }
     }
@@ -689,11 +755,41 @@ class Game {
   }
 
   void DrawPlayer() {
-    BetterDrawSurface(screenSurface, player.GetSurface(), 0,
-                      300 - player.pos.y - ypad + 20);
+    BetterDrawSurface(screenSurface, player.GetSurface(), 0, 300 - player.pos.y - ypad);
     if (DEBUG) {
-      DrawRectangle(screenSurface, player.box.x, player.box.y, player.box.w,
-                    player.box.h, green, black);
+      if (player.box.x < 0 || player.box.x + player.box.w > SCREEN_WIDTH ||
+          player.box.y - ypad < 0 ||
+          player.box.y + player.box.h - ypad > SCREEN_HEIGHT)
+        return;
+      DrawRectangle(screenSurface, player.box.x, player.box.y - ypad,
+                    player.box.w, player.box.h, green, black);
+    }
+  }
+
+  void DrawDolphins() {
+    for (Dolphin& d : dolphins) {
+      BetterDrawSurface(screenSurface, d.sprite.GetSurface(), d.pos.x, d.pos.y);
+    }
+  }
+
+  void HandleDolphins(int timeUnit) { 
+    // Handle change of dolphins
+    int mDolphinCount = score / 10;
+    if (mDolphinCount > dolphinCount) {
+      // Add new dolphins
+      for (int i = 0; i < mDolphinCount - dolphinCount; i++) {
+        printf("Added dolphin\n");
+        Dolphin d{};
+        d.sprite.surfaces = dolphinSprite.surfaces; // Make copy
+        dolphins.push_back(d);
+      }
+
+      dolphinCount = mDolphinCount;
+    }
+
+    // Random movement
+    for (Dolphin& d : dolphins) {
+      d.Update(timeUnit);
     }
   }
 
@@ -707,7 +803,11 @@ class Game {
 
     DrawPlatforms();
 
+
     DrawObstacle();
+
+    DrawDolphins();
+
 
     DrawUI();
 
@@ -740,8 +840,13 @@ class Game {
       capTimer.start();
       HandleEvents(tickTimer.getTicks());
 
+      int timeUnit = tickTimer.getTicks() * (int)fps;
+
       // Handle physics
-      Physics(tickTimer.getTicks() * (int)fps);
+      Physics(timeUnit);
+
+      // Handle dolphins
+      HandleDolphins(timeUnit);
       tickTimer.start();
 
       // Calculate fps
