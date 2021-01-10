@@ -1,6 +1,6 @@
 const float RESISTANCE = 0.5;
 const float DOLPHIN_RESISTANCE = 0.01;
-const float PLAYER_FORCE = 0.5;
+const float PLAYER_FORCE = 0.3;
 const float DOLPHIN_FORCE = 0.05;
 const float ACCELERATION_PER_TICK = 1;
 
@@ -608,8 +608,6 @@ class Game {
     // Add 15% offset
     player.Load(player.normalState.surfaces.Get(0)->w, player.normalState.surfaces.Get(0)->h, platformSurface->h * 0.15);
 
-    ReadConfig("config.yml");
-
     printf("Successfully loaded media\n");
     return true;
   }
@@ -631,12 +629,10 @@ class Game {
     obstacles.push_back(o);
   }
 
-  void LoadLevel() {
+/*void LoadLevel() {
     player.pos.y = 150;
-
-    // SetPlatform(0, 1000);
-
-    /*SetPlatform(0, 390);
+    SetPlatform(0, 1000);
+    SetPlatform(0, 390);
     SetPlatform(400, 350);
     SetPlatform(800, 300);
     SetPlatform(1000, 250);
@@ -645,17 +641,16 @@ class Game {
     SetPlatform(2200, 400);
     SetPlatform(2600, 350);
     SetPlatform(3000, 400);
-    SetPlatform(3400, 300);*/
-    /*for (int i = 0; i < 100; i++) {
+    SetPlatform(3400, 300);
+    for (int i = 0; i < 100; i++) {
       for (int j = 0; j < 100; j++) {
         // printf("Y: %i\n", 400 - (25 * j));
         SetPlatform(50 * j + platformSurface->w * i, 400 - (25 * j) + 1000);
       }
-    }*/
-    LongBoi(100, 0, 380);
-    // SetPlatform(200, 380 - platformSurface->h);
-    // SetObstacle(500, 380 - angryCat.surfaces[0]->h);
-  }
+    }
+     LongBoi(100, 0, 380);
+  }*/
+  // using config file ("config.yml") to load level
 
   void Close() {
     // Deallocate surface
@@ -931,7 +926,8 @@ class Game {
   void Start() {
     if (!Load()) return;
     if (!LoadMedia()) return;
-    LoadLevel();
+    ReadConfig("config.yml");
+    // LoadLevel();
 
     Loop();
 
