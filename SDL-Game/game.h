@@ -1,6 +1,7 @@
 const float RESISTANCE = 0.5;           // 0.128
+const float DOLPHIN_RESISTANCE = 0.01; // 0.128
 const float PLAYER_FORCE = 0.5;         // 0.5
-const float DOLPHIN_FORCE = 2.5;  // 0.5
+const float DOLPHIN_FORCE = 0.05;  // 0.5
 const float ACCELERATION_PER_TICK = 1;  // 0.4
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
@@ -10,15 +11,18 @@ const float MAX_DASH_TIME = 20;
 
 const bool DEBUG = false;
 
-SDL_Rect dolphinBoundaries{100, 100, 200, 200};
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 480;
+
+struct Boundaries {
+  int minX, maxX, minY, maxY;
+};
+Boundaries dolphinBoundaries {0, SCREEN_WIDTH, SCREEN_HEIGHT - 100, SCREEN_HEIGHT};
 
 class Game {
-  const int SCREEN_WIDTH = 640;
-  const int SCREEN_HEIGHT = 480;
-
+  
   const int SCREEN_FPS = 60;
   const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
-
   bool collisionDetected = false;
 
   // Jump logic
@@ -308,39 +312,60 @@ class Game {
   Sprite dolphinSprite;
   unsigned dolphinCount = 0;
   struct Dolphin {
- 
+    int moveTimer = 0;
     struct Coord {
       float x;
       float y;
     } acc, pos;
 
-    void Update() {
-      // Random movement
-      if (rand() & 1) acc.x += ACCELERATION_PER_TICK;
-      else if (rand() & 1) acc.x -= ACCELERATION_PER_TICK;
-      else if (rand() & 1) acc.y += ACCELERATION_PER_TICK;
-      else acc.y -= ACCELERATION_PER_TICK;
+    
+    void Update(int timeUnit) {
+      // Do not add acceleration every frame
+      moveTimer += timeUnit;
+      if (moveTimer >= 5000) {
+        moveTimer = 0;
 
-      // Acceleration
-      if (acc.x > 0) acc.x -= RESISTANCE;
-      else if (acc.x < 0) acc.x += RESISTANCE;
-      if (abs(acc.x) < RESISTANCE) acc.x = 0;
+        // Random movement
+        acc.x += ACCELERATION_PER_TICK * (float((rand() % 2)));
+        acc.x -= ACCELERATION_PER_TICK * (float((rand() % 2)));
+        acc.y += ACCELERATION_PER_TICK * (float((rand() % 2)));
+        acc.y -= ACCELERATION_PER_TICK * (float((rand() % 2)));
 
-      if (acc.y > 0) acc.y -= RESISTANCE;
-      else if (acc.y < 0) acc.y += RESISTANCE;
-      if (abs(acc.y) < RESISTANCE) acc.y = 0;
+        printf("x: %f, y: %f\n", acc.x, acc.y);
+      }
       
-      printf("%f\n", acc.y);
+      // Acceleration
+      if (acc.x > 0) acc.x -= DOLPHIN_RESISTANCE;
+      else if (acc.x < 0) acc.x += DOLPHIN_RESISTANCE;
+      if (abs(acc.x) < DOLPHIN_RESISTANCE) acc.x = 0;
+
+      if (acc.y > 0) acc.y -= DOLPHIN_RESISTANCE;
+      else if (acc.y < 0) acc.y += DOLPHIN_RESISTANCE;
+      if (abs(acc.y) < DOLPHIN_RESISTANCE) acc.y = 0;
 
       // Change pos
       pos.x += DOLPHIN_FORCE * acc.x;
       pos.y += DOLPHIN_FORCE * acc.y;
 
       // Up to boundaries
-      /*if (pos.x < dolphinBoundaries.x)
-        pos.x = 0;
-      if (pos.y < dolphinBoundaries.y || pos.y > dolphinBoundaries.h)
-        pos.y = 0;*/
+      if (pos.x < dolphinBoundaries.minX) {
+        pos.x = dolphinBoundaries.minX;
+        acc.x = -acc.x;
+      }
+
+      if (pos.x > dolphinBoundaries.maxX) {
+        pos.x = dolphinBoundaries.maxX;
+        acc.x = -acc.x;
+      }
+
+      if (pos.y < dolphinBoundaries.minY) {
+        pos.y = dolphinBoundaries.minY;
+        acc.y = -acc.y;
+      }
+      if (pos.y > dolphinBoundaries.maxY) {
+        pos.y = dolphinBoundaries.maxY;
+        acc.y = -acc.y;
+      }
     }
   };
   Vector<Dolphin> dolphins;
@@ -676,18 +701,17 @@ class Game {
 
   void DrawDolphins() {
     for (Dolphin d : dolphins) {
-      printf("X: %f, Y: %f\n", d.pos.x, d.pos.y);
-      BetterDrawSurface(screenSurface, dolphinSprite.GetSurface(), 40, 80);
-      break;
+      BetterDrawSurface(screenSurface, dolphinSprite.GetSurface(), d.pos.x, d.pos.y);
     }
   }
 
-  void HandleDolphins() { 
+  void HandleDolphins(int timeUnit) { 
     // Handle change of dolphins
     int mDolphinCount = score / 10;
     if (mDolphinCount > dolphinCount) {
       // Add new dolphins
       for (int i = 0; i < mDolphinCount - dolphinCount; i++) {
+        printf("Added dolphin\n");
         dolphins.push_back({});
       }
 
@@ -695,8 +719,8 @@ class Game {
     }
 
     // Random movement
-    for (Dolphin d : dolphins) {
-      d.Update();
+    for (Dolphin& d : dolphins) {
+      d.Update(timeUnit);
     }
   }
 
@@ -743,11 +767,13 @@ class Game {
       capTimer.start();
       HandleEvents(tickTimer.getTicks());
 
+      int timeUnit = tickTimer.getTicks() * (int)fps;
+
       // Handle physics
-      Physics(tickTimer.getTicks() * (int)fps);
+      Physics(timeUnit);
 
       // Handle dolphins
-      HandleDolphins();
+      HandleDolphins(timeUnit);
       tickTimer.start();
 
       // Calculate fps
