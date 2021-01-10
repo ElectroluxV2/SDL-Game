@@ -26,6 +26,11 @@ struct Vector {
     return root + count;
   }
 
+  T operator [] (int index) {
+    if (index < 0 || index > count) return NULL;
+    return root[index];
+  }
+
   void Reallocate(int reallocateSize) {
     allocatedSize = reallocateSize;
     T* newRoot = new T[allocatedSize];
