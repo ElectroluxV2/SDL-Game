@@ -61,4 +61,10 @@ struct Vector {
     push_back(NULL);
     return root + count - 1;
   }
+
+  void Erase() {
+    for (int i = 0; i < count; i++) {
+      pop_back();
+    }
+  }
 };
