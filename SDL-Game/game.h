@@ -1,8 +1,8 @@
-const float RESISTANCE = 0.5;           // 0.128
-const float DOLPHIN_RESISTANCE = 0.01; // 0.128
-const float PLAYER_FORCE = 0.5;         // 0.5
-const float DOLPHIN_FORCE = 0.05;  // 0.5
-const float ACCELERATION_PER_TICK = 1;  // 0.4
+const float RESISTANCE = 0.5;
+const float DOLPHIN_RESISTANCE = 0.01;
+const float PLAYER_FORCE = 0.5;
+const float DOLPHIN_FORCE = 0.05;
+const float ACCELERATION_PER_TICK = 1;
 
 const float JUMP_FORCE = PLAYER_FORCE * 3;
 const float GRAVITY_FORCE = JUMP_FORCE * 5;
@@ -64,7 +64,6 @@ class Game {
   Vector<Platform> obstacles;
 
   struct Sprite {
-   private:
     int state = 0;
     int counter = 0;
 
@@ -312,13 +311,13 @@ class Game {
   Sprite dolphinSprite;
   unsigned dolphinCount = 0;
   struct Dolphin {
+    Sprite sprite; // Contains only own timer and pointers to surfaces
     int moveTimer = 0;
     struct Coord {
       float x;
       float y;
     } acc, pos;
 
-    
     void Update(int timeUnit) {
       // Do not add acceleration every frame
       moveTimer += timeUnit;
@@ -331,7 +330,7 @@ class Game {
         acc.y += ACCELERATION_PER_TICK * (float((rand() % 2)));
         acc.y -= ACCELERATION_PER_TICK * (float((rand() % 2)));
 
-        printf("x: %f, y: %f\n", acc.x, acc.y);
+        // printf("x: %f, y: %f\n", acc.x, acc.y);
       }
       
       // Acceleration
@@ -362,6 +361,7 @@ class Game {
         pos.y = dolphinBoundaries.minY;
         acc.y = -acc.y;
       }
+
       if (pos.y > dolphinBoundaries.maxY) {
         pos.y = dolphinBoundaries.maxY;
         acc.y = -acc.y;
@@ -700,8 +700,8 @@ class Game {
   }
 
   void DrawDolphins() {
-    for (Dolphin d : dolphins) {
-      BetterDrawSurface(screenSurface, dolphinSprite.GetSurface(), d.pos.x, d.pos.y);
+    for (Dolphin& d : dolphins) {
+      BetterDrawSurface(screenSurface, d.sprite.GetSurface(), d.pos.x, d.pos.y);
     }
   }
 
@@ -712,7 +712,9 @@ class Game {
       // Add new dolphins
       for (int i = 0; i < mDolphinCount - dolphinCount; i++) {
         printf("Added dolphin\n");
-        dolphins.push_back({});
+        Dolphin d{};
+        d.sprite.surfaces = dolphinSprite.surfaces; // Make copy
+        dolphins.push_back(d);
       }
 
       dolphinCount = mDolphinCount;
