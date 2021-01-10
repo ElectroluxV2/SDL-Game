@@ -439,15 +439,13 @@ class Game {
 
     // Folow on y axyis
     player.box.y = -player.pos.y + 300;
-    player.OnPhysics(toCheck, timeUnit);
+    player.OnPhysics(toCheck, obstacles, timeUnit);
 
     // Calc score
     int aScore = (int)player.pos.x / 100;
     if (aScore > score)
       score = aScore;
 
-
-    player.OnPhysics(platforms, obstacles, timeUnit);
     // Dolphin count is depended on score
     int dolphinScore = 0;
   }
