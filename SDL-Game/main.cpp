@@ -7,6 +7,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <cfloat>
+#include <ctype.h>
 #include "functions.h"
 #include "vector.h"
 #include "player.h"

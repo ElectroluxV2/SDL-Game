@@ -1,0 +1,22 @@
+# this is comment
+# platforms
+
+platforms:
+  - 400
+    100
+
+  - 700
+    100
+
+  - 1000
+    100
+
+obstacles:
+  - 400
+    380
+
+  - 700
+    380
+
+  - 1000
+    380

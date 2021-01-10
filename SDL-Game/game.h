@@ -20,6 +20,8 @@ struct Boundaries {
 };
 Boundaries dolphinBoundaries {0, SCREEN_WIDTH, SCREEN_HEIGHT - 100, SCREEN_HEIGHT};
 
+const int BUFFER_SIZE = 255;
+
 class Game {
   
   const int SCREEN_FPS = 60;
@@ -450,6 +452,52 @@ class Game {
     int dolphinScore = 0;
   }
 
+  void ReadConfig(const char* filename) {
+    FILE* config = fopen(filename, "r");
+    if (!config) printf("Config file not found!\n");
+
+    char buffer[BUFFER_SIZE];
+    bool platforms = false, obstacles = false, xLoaded = false, yLoaded = false;
+    int x = 0, y = 0;
+    while (fgets(buffer, BUFFER_SIZE, config)) {
+      switch (buffer[0]) {
+      case '#':
+        continue;
+        break;
+
+      case 'p':
+        platforms = true;
+        obstacles = false;
+        break;
+
+      case 'o':
+        obstacles = true;
+        platforms = false;
+        break;
+      case '\n':
+        xLoaded = false;
+        yLoaded = false;
+        break;
+      }
+      if (buffer[2] == '-') {
+        x = atoi(buffer + 3);
+        xLoaded = true;
+      } else if (xLoaded) {
+        y = atoi(buffer + 3);
+        // printf("x: %d, y: %d\n", x, y);
+        if (platforms) {
+          // printf("Platform placed!\n");
+          SetPlatform(x, y);
+        }
+        if (obstacles) {
+          // printf("Obstacle placed!\n");
+          SetObstacle(x, y);
+        }
+      } 
+    }
+    fclose(config);
+  }
+
   bool Load() {
     // Initialize SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -547,6 +595,8 @@ class Game {
     // Add 15% offset
     player.Load(player.normalState.surfaces.Get(0)->w, player.normalState.surfaces.Get(0)->h, platformSurface->h * 0.15);
 
+    ReadConfig("config.yml");
+
     printf("Successfully loaded media\n");
     return true;
   }
@@ -590,8 +640,8 @@ class Game {
       }
     }*/
     LongBoi(100, 0, 380);
-    SetPlatform(200, 380 - platformSurface->h);
-    SetObstacle(500, 380 - angryCat.surfaces[0]->h);
+    // SetPlatform(200, 380 - platformSurface->h);
+    // SetObstacle(500, 380 - angryCat.surfaces[0]->h);
   }
 
   void Close() {
@@ -629,7 +679,6 @@ class Game {
   }
 
   bool b1 = false;
-
   void HandleEvents(int ticks) {
     // keyboard mocarz obluhuje
     const Uint8* key = SDL_GetKeyboardState(NULL);
