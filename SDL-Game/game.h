@@ -152,7 +152,10 @@ class Game {
       Reset();
     }
 
-    void AddAccelerationX(float f) { acc.x += f; }
+    void AddAccelerationX(float f) {
+      if (acc.x >= 1000) return;
+      acc.x += f; 
+    }
 
     void SubAccelerationX(float f) {
       if (pos.x <= 0) return;
@@ -473,9 +476,14 @@ class Game {
         action = 2;
         break;
 
-      case 'o':
+      case 'X':
         action = 3;
         break;
+
+      case 'Y':
+        action = 4;
+        break;
+
       case '\n':
         xLoaded = false;
         yLoaded = false;
@@ -489,11 +497,12 @@ class Game {
         y = atoi(buffer + 3);
         yLoaded = true;
         // printf("x: %d, y: %d\n", x, y);
-      } else if (action == 2 && yLoaded) {
+      } else if (yLoaded && (action == 2 || action == 4)) {
         quantity = atoi(buffer + 3);
         qLoaded = true;
         printf("Long platform placed!\n");
-        LongBoi(quantity, x, y);
+        if (action == 2) LongBoi(quantity, x, y);
+        if (action == 4) SetStalactite(quantity, x, y);
       }
 
       if (xLoaded && yLoaded && !qLoaded) {
@@ -627,6 +636,13 @@ class Game {
   void SetObstacle(int x, int y) {
     Platform o = {{x, y, angryCat.surfaces[0]->w, angryCat.surfaces[0]->h}, x};
     obstacles.push_back(o);
+  }
+
+  void SetStalactite(int count, int x, int y) {
+    for (int i = 0; i < count; i++) {
+      SetPlatform(x, y);
+      y += angryCat.surfaces[0]->h;
+    }
   }
 
 /*void LoadLevel() {
