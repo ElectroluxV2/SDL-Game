@@ -121,57 +121,36 @@ void FreeSurface(SDL_Surface** surf) {
 }
  
 // The application time based timer
-class LTimer {
+class Timer {
  public:
   // Initializes variables
-  LTimer() {
-    mStartTicks = 0;
-    mPausedTicks = 0;
+  Timer() {
+    StartTicks = 0;
+    PausedTicks = 0;
 
-    mPaused = false;
-    mStarted = false;
+    Paused = false;
+    Started = false;
   }
 
-  // The various clock actions
   void start() {
-    mStarted = true;
+    Started = true;
 
     // Unpause the timer
-    mPaused = false;
+    Paused = false;
 
     // Get the current clock time
-    mStartTicks = SDL_GetTicks();
-    mPausedTicks = 0;
+    StartTicks = SDL_GetTicks();
+    PausedTicks = 0;
   }
   void stop() {
-    mStarted = false;
+    Started = false;
 
     // Unpause the timer
-    mPaused = false;
+    Paused = false;
 
     // Clear tick variables
-    mStartTicks = 0;
-    mPausedTicks = 0;
-  }
-  void pause() {
-    if (mStarted && !mPaused) {
-      mPaused = true;
-
-      mPausedTicks = SDL_GetTicks() - mStartTicks;
-      mStartTicks = 0;
-    }
-  }
-  void unpause() {
-    if (mStarted && mPaused) {
-      // Unpause the timer
-      mPaused = false;
-
-      // Reset the starting ticks
-      mStartTicks = SDL_GetTicks() - mPausedTicks;
-
-      // Reset the paused ticks
-      mPausedTicks = 0;
-    }
+    StartTicks = 0;
+    PausedTicks = 0;
   }
 
   // Gets the timer's time
@@ -180,40 +159,30 @@ class LTimer {
     Uint32 time = 0;
 
     // If the timer is running
-    if (mStarted) {
+    if (Started) {
       // If the timer is paused
-      if (mPaused) {
+      if (Paused) {
         // Return the number of ticks when the timer was paused
-        time = mPausedTicks;
+        time = PausedTicks;
       }
       else {
         // Return the current time minus the start time
-        time = SDL_GetTicks() - mStartTicks;
+        time = SDL_GetTicks() - StartTicks;
       }
     }
 
     return time;
   }
-
-  bool isStarted() {
-    // Timer is running and paused or unpaused
-    return mStarted;
-  }
-  bool isPaused() {
-    // Timer is running and paused
-    return mPaused && mStarted;
-  }
-
  private:
   // The clock time when the timer started
-  Uint32 mStartTicks;
+  Uint32 StartTicks;
 
   // The ticks stored when the timer was paused
-  Uint32 mPausedTicks;
+  Uint32 PausedTicks;
 
   // The timer status
-  bool mPaused;
-  bool mStarted;
+  bool Paused;
+  bool Started;
 };
 
 bool checkCollision(SDL_Rect a, SDL_Rect b)

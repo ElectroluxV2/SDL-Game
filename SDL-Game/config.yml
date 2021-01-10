@@ -6,7 +6,11 @@ shortplatforms:
 longplatforms:
   - 0
     380
-    1000
+    10
+
+  - 1430
+    380
+    10
 
 Xobstacles:
   - 400

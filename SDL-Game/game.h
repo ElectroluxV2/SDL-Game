@@ -15,17 +15,18 @@ const bool DEBUG = false;
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
+const int SCREEN_FPS = 60;
+const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+
+const int BUFFER_SIZE = 255;
+
 struct Boundaries {
   int minX, maxX, minY, maxY;
 };
 Boundaries dolphinBoundaries {0, SCREEN_WIDTH, SCREEN_HEIGHT - 100, SCREEN_HEIGHT};
 
-const int BUFFER_SIZE = 255;
-
 class Game {
-  
-  const int SCREEN_FPS = 60;
-  const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+  // Physic logic 
   bool collisionDetected = false;
 
   // Jump logic
@@ -75,18 +76,18 @@ class Game {
   SDL_Surface* platformSurfaceWhenPlayerIsOnIt = NULL;
 
   // Platfroms array
-  struct Platform {
+  struct Object {
     SDL_Rect box = {0, 0, 0, 0};
     int onMapPlacementX = 0;
     int state = 0;
   };
-  Vector<Platform> platforms;
+  Vector<Object> platforms;
 
   // Obstacles
   Sprite angryCat;
 
   // Obstacles array
-  Vector<Platform> obstacles;
+  Vector<Object> obstacles;
 
   // The window renderer
   SDL_Renderer* renderer = NULL;
@@ -109,12 +110,17 @@ class Game {
   // Current time start time
   Uint32 startTime = 0;
 
+  // width of a stage
+  bool countWidth = true;
+  int width = 0;
+  int stage = 0;
+
   // false -> steering with arrows, true -> automatic movment
   bool mode = false;
 
   // Camera follow player on Y axis
   int ypad = 0;
-  int tagretypad = 0; // But smooth
+  int tagretypad = 0; // But smooth  
 
   // Player x
   struct Player {
@@ -130,6 +136,8 @@ class Game {
     int dashCount = 0;
     int dashTimer = 0;
     int cooldownDash = 0;
+    int score = 0;
+    int obstaclesDestoryed = 0;
 
     SDL_Rect box = {0, 0, 0, 0};
 
@@ -149,6 +157,7 @@ class Game {
     }
 
     void Die() {
+      score = 0;
       Reset();
     }
 
@@ -193,7 +202,7 @@ class Game {
       dashTimer = 0;
     }
     
-    void JumpPhysics(Vector<Platform*> platforms) {
+    void JumpPhysics(Vector<Object*> platforms) {
       float tmp = pos.y;  // Do not change player pos before colision test
       if (!dashing) {     // if dashing ignore changes on y
         if (acc.y > 0) {
@@ -221,7 +230,7 @@ class Game {
 
       // Check colision
       // Every platformG
-      for (Platform* p : platforms) {
+      for (Object* p : platforms) {
         // Check if can pass by
         if (checkCollision(box, p->box)) {
           // Reenable jump on floor hit
@@ -249,7 +258,7 @@ class Game {
       pos.y = tmp;
     }
 
-    void MovePhysics(Vector<Platform*> platforms) {
+    void MovePhysics(Vector<Object*> platforms) {
       if (!dashing) {  // if dashing ignore changes on x
         if (acc.x > 0)
           acc.x -= RESISTANCE;
@@ -262,7 +271,7 @@ class Game {
       // Position player want to go
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
       // Every platform
-      for (Platform* p : platforms) {
+      for (Object* p : platforms) {
         // Relative postion of box
         int platformRelatvieX = p->box.x;
         p->box.x = p->onMapPlacementX - tmp;
@@ -283,10 +292,10 @@ class Game {
       if (pos.x <= 0 && acc.x <= 0) acc.x = 0;
     }
     
-    void DashPhysics(Vector<Platform> obstacles) {
+    void DashPhysics(Vector<Object> obstacles) {
       float tmp = pos.x + (acc.x * PLAYER_FORCE);
 
-      for (Platform o : obstacles) {
+      for (Object o : obstacles) {
         // Relative postion of box
         int platformRelatvieX = o.box.x;
         o.box.x = o.onMapPlacementX - tmp;
@@ -294,14 +303,12 @@ class Game {
         if (checkCollision(o.box, box) && !dashing) {
           o.box.x = platformRelatvieX;
           Die();
-        } else if (checkCollision(o.box, box) && dashing) {
-
-        }
+        } 
       }
 
     }
 
-    void OnPhysics(Vector<Platform*> platforms, Vector<Platform> obstacles, int timeUnit) {
+    void OnPhysics(Vector<Object*> platforms, Vector<Object> obstacles, int timeUnit) {
       if (dashing) {
         if (dashTimer >= timeUnit * MAX_DASH_TIME) {
           dashTimer = 0;
@@ -335,9 +342,6 @@ class Game {
         return dashState.GetSurface();
     }
   } player;
-
-  // Score is needed to calc ammount of Dolphins
-  int score = 0;
 
   // Dolphins
   Sprite dolphinSprite;
@@ -408,8 +412,6 @@ class Game {
     if (player.box.y - ypad > 350) tagretypad = tmp;
     if (player.box.y - ypad < 50) tagretypad = tmp;
 
-    // printf("target: %i, now: %i\n", tagretypad, ypad);
-
     if (tagretypad > ypad)
       ypad += 0.1 * abs(ypad - tagretypad);
     else if (tagretypad < ypad)
@@ -421,9 +423,9 @@ class Game {
       ypad = tagretypad;
 
 
-    Vector<Platform*> toCheck;
+    Vector<Object*> toCheck;
     // Follow player movement
-    for (Platform& p : platforms) {
+    for (Object& p : platforms) {
       int destX = p.onMapPlacementX - player.pos.x;
       p.box.x = destX;
 
@@ -435,33 +437,38 @@ class Game {
 
       toCheck.push_back(&p);
     }
-    for (Platform& o : obstacles) {
+    for (Object& o : obstacles) {
       int destX = o.onMapPlacementX - player.pos.x;
       o.box.x = destX;
     }
-
-    // printf("%i\n", toCheck.count);
 
     // Folow on y axyis
     player.box.y = -player.pos.y + 300;
     player.OnPhysics(toCheck, obstacles, timeUnit);
 
+    int calc = width - SCREEN_WIDTH + stage * (width - SCREEN_WIDTH);
+    if (player.pos.x > calc) {
+      stage++;
+      ReadConfig("config.yml", width * stage);
+    }
+
     // Calc score
     int aScore = (int)player.pos.x / 100;
-    if (aScore > score)
-      score = aScore;
+    if (aScore > player.score)
+      player.score = aScore;
 
     // Dolphin count is depended on score
     int dolphinScore = 0;
   }
 
-  void ReadConfig(const char* filename) {
+  void ReadConfig(const char* filename, int multi = 0) {
     FILE* config = fopen(filename, "r");
     if (!config) printf("Config file not found!\n");
 
     char buffer[BUFFER_SIZE];
     bool xLoaded = false, yLoaded = false, qLoaded = false;
     int action = 0, x = 0, y = 0, quantity = 0;
+    int deltaX = 0, endX = 0;
     while (fgets(buffer, BUFFER_SIZE, config)) {
       switch (buffer[0]) {
       case '#':
@@ -491,7 +498,7 @@ class Game {
         break;
       }
       if (buffer[2] == '-') {
-        x = atoi(buffer + 3);
+        x = atoi(buffer + 3) + multi;
         xLoaded = true;
       } else if (xLoaded && !yLoaded) {
         y = atoi(buffer + 3);
@@ -500,23 +507,30 @@ class Game {
       } else if (yLoaded && (action == 2 || action == 4)) {
         quantity = atoi(buffer + 3);
         qLoaded = true;
-        printf("Long platform placed!\n");
-        if (action == 2) LongBoi(quantity, x, y);
+        // printf("Long platform placed!\n");
+        if (action == 2) {
+          LongBoi(quantity, x, y);
+          deltaX = x - endX;
+          if(countWidth) width += quantity * platformSurface->w + deltaX; 
+          endX = x + quantity * platformSurface->w;
+        }
         if (action == 4) SetStalactite(quantity, x, y);
       }
 
       if (xLoaded && yLoaded && !qLoaded) {
         if (action == 1) {
-          printf("Platform placed!\n");
+          // printf("Platform placed!\n");
           SetPlatform(x, y);
         }
 
         if (action == 3) {
-          printf("Obstacle placed!\n");
+          // printf("Obstacle placed!\n");
           SetObstacle(x, y);
         }
       }
     }
+    printf("width: %d\n", width);
+    countWidth = false;
     fclose(config);
   }
 
@@ -573,11 +587,14 @@ class Game {
   }
 
   bool LoadMedia() {
+    // charset
     if (!LoadSurface("cs8x8.bmp", &charsetSurface)) return false;
     SDL_SetColorKey(charsetSurface, true, 0x000000);
 
+    // background
     if (!LoadOptimizedSurface("map.bmp", &screenSurface, &mapSurface)) return false;
 
+    // players animation
     if (!LoadOptimizedSurface("juan_normal_0.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("juan_normal_1.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("juan_normal_2.bmp", &screenSurface, player.normalState.surfaces.Next())) return false;
@@ -598,15 +615,18 @@ class Game {
     if (!LoadOptimizedSurface("juan_dash_2.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("juan_dash_3.bmp", &screenSurface, player.dashState.surfaces.Next())) return false;
 
+    // platform animation
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
     if (!LoadOptimizedSurface("juan'splatform.bmp", &screenSurface, &platformSurface)) return false;
     if (!LoadOptimizedSurface("juan'splatform_but_angry.bmp", &screenSurface, &platformSurfaceWhenPlayerIsOnIt)) return false;
 
+    // dolphin animation
     if (!LoadOptimizedSurface("d0.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("d1.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("d2.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("d3.bmp", &screenSurface, dolphinSprite.surfaces.Next())) return false;
 
+    // obstacle animation
     if (!LoadOptimizedSurface("angry_cat_0.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("angry_cat_1.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
     if (!LoadOptimizedSurface("angry_cat_2.bmp", &screenSurface, angryCat.surfaces.Next())) return false;
@@ -622,7 +642,7 @@ class Game {
   }
 
   void SetPlatform(int x, int y) {
-    Platform p = {{x, y, platformSurface->w, platformSurface->h}, x};
+    Object p = {{x, y, platformSurface->w, platformSurface->h}, x};
     platforms.push_back(p);
   }
 
@@ -634,7 +654,7 @@ class Game {
   }
 
   void SetObstacle(int x, int y) {
-    Platform o = {{x, y, angryCat.surfaces[0]->w, angryCat.surfaces[0]->h}, x};
+    Object o = {{x, y, angryCat.surfaces[0]->w, angryCat.surfaces[0]->h}, x};
     obstacles.push_back(o);
   }
 
@@ -702,15 +722,15 @@ class Game {
     printf("Successfully closed\n");
   }
 
-  bool b1 = false;
+  bool pressedOnce = false;
   void HandleEvents(int ticks) {
-    // keyboard mocarz obluhuje
+    // keyboard event handle
     const Uint8* key = SDL_GetKeyboardState(NULL);
     if (key[SDL_SCANCODE_D]) {
-      b1 = true;
-    } else if (b1) {
+      pressedOnce = true;
+    } else if (pressedOnce) {
       mode = !mode;
-      b1 = false;
+      pressedOnce = false;
     }
     if (key[SDL_SCANCODE_RIGHT] || mode) {
       player.AddAccelerationX(ACCELERATION_PER_TICK);
@@ -763,7 +783,7 @@ class Game {
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 10,
                text, charsetSurface);
 
-    sprintf(text, "score: %i, ", score);
+    sprintf(text, "score: %i, posX: %f", player.score, player.pos.x);
     DrawString(screenSurface, screenSurface->w / 2 - strlen(text) * 8 / 2, 26,
                text, charsetSurface);
 
@@ -787,14 +807,14 @@ class Game {
       x = 0;
     }
 
-    // printf("x: %d\ty: %d\n", x, 0);
-
     BetterDrawSurface(screenSurface, mapSurface, x, 46);
     BetterDrawSurface(screenSurface, mapSurface, x + mapSurface->w, 46);
   }
 
   void DrawPlatforms() {
-    for (Platform p : platforms) {
+    int tmp = 0;
+    tmp = stage * width;
+    for (Object p : platforms) {
       // Box has relative to screen values
       BetterDrawSurface(
           screenSurface,
@@ -812,7 +832,7 @@ class Game {
   }
 
   void DrawObstacle() {
-    for (Platform o : obstacles) {
+    for (Object o : obstacles) {
       BetterDrawSurface(screenSurface, angryCat.GetSurface(), o.box.x, o.box.y - ypad);
 
       if (DEBUG) {
@@ -845,7 +865,7 @@ class Game {
 
   void HandleDolphins(int timeUnit) { 
     // Handle change of dolphins
-    int mDolphinCount = score / 10;
+    int mDolphinCount = player.score / 10;
     if (mDolphinCount > dolphinCount) {
       // Add new dolphins
       for (int i = 0; i < mDolphinCount - dolphinCount; i++) {
@@ -891,13 +911,13 @@ class Game {
 
   void Loop() {
     // The frames per second timer
-    LTimer fpsTimer;
+    Timer fpsTimer;
 
     // The frames per second cap timer
-    LTimer capTimer;
+    Timer capTimer;
 
     // The time between ticks
-    LTimer tickTimer;
+    Timer tickTimer;
 
     // Start counting frames per second
     int countedFrames = 0;
@@ -922,7 +942,7 @@ class Game {
 
       // Calculate fps
       fps = countedFrames / (fpsTimer.getTicks() / (float)1000);
-      if (fps > 2000000) {
+      if (fps > 2000000) { // prevention of fps being too large
         fps = 0;
       }
 
