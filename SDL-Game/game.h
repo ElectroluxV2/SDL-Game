@@ -224,7 +224,7 @@ class Game {
     }
 
     void AddAccelerationX(float f) {
-      if (acc.x >= 700) return;
+      if (acc.x >= 400) return;
       acc.x += f; 
     }
 
@@ -331,7 +331,7 @@ class Game {
       }
 
       // Position player want to go
-      float tmp = pos.x + (acc.x * PLAYER_FORCE);
+      float tmp = pos.x + (acc.x * PLAYER_FORCE) * 0.6;
       // Every platform
       for (Object* p : platforms) {
         // Relative postion of box
